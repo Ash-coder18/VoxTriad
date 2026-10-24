@@ -5,8 +5,8 @@
  *   cp frontend/config.example.js frontend/config.js
  */
 
-window.SUPABASE_URL = 'https://eyjehbjsttlaqqjaqtdj.supabase.co';
-window.SUPABASE_ANON_KEY = 'sb_publishable_L5YKKJYqj0UbUIQda3PvxQ_Cy0IMxwF';
+window.SUPABASE_URL = 'your_supabase_url_here';
+window.SUPABASE_ANON_KEY = 'your_supabase_anon_key_here';
 
 // =============================================================================
 // CLIENT INITIALIZATION (Fallback / Standalone Mode)
