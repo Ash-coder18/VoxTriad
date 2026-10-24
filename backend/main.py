@@ -434,18 +434,6 @@ async def health_check() -> HealthResponse:
     )
 
 
-@app.get("/api/config", tags=["Config"])
-async def get_client_config():
-    """
-    Public configuration endpoint exposing client-safe Supabase credentials.
-    Does NOT expose private server secrets (service role key, Groq API key).
-    """
-    return {
-        "supabase_url": os.getenv("SUPABASE_URL", ""),
-        "supabase_anon_key": os.getenv("SUPABASE_ANON_KEY", ""),
-    }
-
-
 @app.put("/api/patients/update", tags=["Patients"])
 async def update_patient(payload: PatientUpdate):
     """

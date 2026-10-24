@@ -16,8 +16,11 @@
 // 1. CONFIGURATION
 // =============================================================================
 
-// Environment variables: resolved dynamically from window or backend /api/config
+// Supabase credentials are injected by config.js (loaded before app.js).
+// Do NOT hardcode keys here. See .env.example for setup instructions.
 var SUPABASE_URL = typeof window !== 'undefined' && window.SUPABASE_URL ? window.SUPABASE_URL : '';
+
+// Supabase anon key is set by config.js via window.SUPABASE_ANON_KEY
 var SUPABASE_ANON_KEY = typeof window !== 'undefined' && window.SUPABASE_ANON_KEY ? window.SUPABASE_ANON_KEY : '';
 
 /** Base URL of the FastAPI backend (dynamically resolves to loopback host). */
@@ -63,7 +66,7 @@ let supabaseClient = (typeof window !== 'undefined' && window.supabaseClient)
 
 if (!supabaseClient) {
   try {
-    if (typeof window !== 'undefined' && window.supabase && typeof window.supabase.createClient === 'function' && SUPABASE_URL && SUPABASE_ANON_KEY) {
+    if (typeof window !== 'undefined' && window.supabase && typeof window.supabase.createClient === 'function') {
       supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
         auth: {
           persistSession: true,
@@ -73,38 +76,13 @@ if (!supabaseClient) {
       });
       console.info('[VoxTriad] Supabase client successfully initialized in app.js.');
     } else {
-      console.warn('[VoxTriad] Supabase credentials not found or SDK not available. Falling back to offline mock client.');
+      console.warn('[VoxTriad] window.supabase is not available. Falling back to offline mock client.');
       supabaseClient = createMockSupabase();
     }
   } catch (err) {
     console.warn('[VoxTriad] Exception while initializing Supabase client:', err);
     supabaseClient = createMockSupabase();
   }
-}
-
-// Asynchronously bootstrap client from backend /api/config if not pre-configured
-if (typeof window !== 'undefined' && (!SUPABASE_URL || !SUPABASE_ANON_KEY)) {
-  fetch(`${API_BASE_URL}/api/config`)
-    .then((res) => (res.ok ? res.json() : null))
-    .then((cfg) => {
-      if (cfg && cfg.supabase_url && cfg.supabase_anon_key && window.supabase && typeof window.supabase.createClient === 'function') {
-        SUPABASE_URL = cfg.supabase_url;
-        SUPABASE_ANON_KEY = cfg.supabase_anon_key;
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-          auth: {
-            persistSession: true,
-            autoRefreshToken: true,
-            detectSessionInUrl: true,
-          },
-        });
-        window.SUPABASE_URL = SUPABASE_URL;
-        window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
-        window.supabaseClient = supabaseClient;
-        window.supabase = supabaseClient;
-        console.info('[VoxTriad] Supabase client dynamically configured from backend /api/config.');
-      }
-    })
-    .catch(() => {});
 }
 
 // =============================================================================

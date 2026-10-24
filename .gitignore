@@ -159,6 +159,12 @@ ENV/
 env.bak/
 venv.bak/
 
+# Node
+node_modules/
+
+# macOS
+.DS_Store
+
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -218,9 +224,3 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-
-# Security & Node/OS Artifacts
-.env
-__pycache__/
-node_modules/
-.DS_Store
