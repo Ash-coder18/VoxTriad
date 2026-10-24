@@ -150,6 +150,7 @@ activemq-data/
 # Environments
 backend/.env
 .env
+frontend/config.js
 backend/temp_audio/
 .envrc
 .venv
