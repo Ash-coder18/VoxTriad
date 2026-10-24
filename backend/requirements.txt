@@ -1,0 +1,41 @@
+# VoxTriad Backend – Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Web framework & ASGI server
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.1
+python-multipart>=0.0.9
+
+# Data validation
+pydantic>=2.7.4
+
+# Environment variable management
+python-dotenv>=1.0.1
+
+# Supabase client (includes postgrest, gotrue, storage3, realtime)
+supabase>=2.4.6
+
+# Numerical & signal processing
+numpy>=1.26.0
+scipy>=1.13.0
+
+# Audio I/O
+soundfile>=0.12.1
+
+# Audio feature extraction (MFCC, pitch, spectral features …)
+librosa>=0.10.2
+
+# HTTP client used by supabase SDK
+httpx>=0.27.0
+
+# ML ensemble (Phase 3)
+scikit-learn>=1.5.0
+joblib>=1.4.0
+
+# Groq LLM clinical summarisation (Phase 4)
+groq>=0.9.0
+
+# Deep audio embeddings – install separately (large download, GPU optional)
+# pip install torch transformers
+# torch>=2.3.0
+# transformers>=4.42.0

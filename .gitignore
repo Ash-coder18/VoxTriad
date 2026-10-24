@@ -148,7 +148,9 @@ activemq-data/
 *.sage.py
 
 # Environments
+backend/.env
 .env
+backend/temp_audio/
 .envrc
 .venv
 env/
@@ -216,3 +218,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Security & Node/OS Artifacts
+.env
+__pycache__/
+node_modules/
+.DS_Store

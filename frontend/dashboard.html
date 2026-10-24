@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | VoxTriad</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#0B1120',
+                        surface: '#0F172A',
+                        primary: '#22D3EE',
+                        'primary-hover': '#06B6D4',
+                        danger: '#F43F5E',
+                        warning: '#F59E0B',
+                        success: '#10B981',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+                    },
+                    animation: {
+                        'fade-up': 'fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'draw-segment': 'drawSegment 1.5s ease-out forwards',
+                    },
+                    keyframes: {
+                        fadeUp: {
+                            '0%': { opacity: 0, transform: 'translateY(20px)' },
+                            '100%': { opacity: 1, transform: 'translateY(0)' },
+                        },
+                        drawSegment: {
+                            '0%': { strokeDasharray: '0, 100' },
+                            '100%': { strokeDasharray: 'var(--dash), 100' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Supabase JS Client (Realtime) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        body {
+            background-color: #0B1120;
+            color: #FFFFFF;
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        /* Light Theme Overrides */
+        body.light-theme {
+            background-color: #f8fafc; /* slate-50 */
+            color: #0f172a; /* slate-900 */
+        }
+        body.light-theme .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(203, 213, 225, 0.6); /* slate-300 */
+        }
+        body.light-theme .text-slate-400 {
+            color: #64748b; /* slate-500 */
+        }
+        body.light-theme .text-white {
+            color: #0f172a; /* slate-900 */
+        }
+        body.light-theme .border-slate-800\/80 {
+            border-color: rgba(226, 232, 240, 0.8); /* slate-200 */
+        }
+        body.light-theme .bg-slate-900\/50 {
+            background-color: rgba(241, 245, 249, 0.7); /* slate-100 */
+        }
+        body.light-theme .bg-slate-800 {
+            background-color: #e2e8f0; /* slate-200 */
+            color: #0f172a;
+        }
+
+        .glow-text {
+            text-shadow: 0 0 15px rgba(34, 211, 238, 0.4);
+        }
+        
+        /* Subtle grid background */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+
+        /* Circular Progress for Risk Tiers */
+        .circular-chart {
+            display: block;
+            margin: 0 auto;
+            max-width: 80%;
+            max-height: 250px;
+        }
+        .circle-bg {
+            fill: none;
+            stroke: rgba(51, 65, 85, 0.3);
+            stroke-width: 3.8;
+        }
+        .circle {
+            fill: none;
+            stroke-width: 3.8;
+            stroke-linecap: round;
+        }
+        
+        /* Hover FX */
+        .interactive-card {
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .interactive-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(34, 211, 238, 0.4);
+            box-shadow: 0 10px 30px -10px rgba(34, 211, 238, 0.15);
+        }
+        
+        /* Staggered Animations */
+        .stagger-1 { animation-delay: 0.1s; opacity: 0; }
+        .stagger-2 { animation-delay: 0.2s; opacity: 0; }
+        .stagger-3 { animation-delay: 0.3s; opacity: 0; }
+        .stagger-4 { animation-delay: 0.4s; opacity: 0; }
+        .stagger-5 { animation-delay: 0.5s; opacity: 0; }
+    </style>
+</head>
+<body class="bg-grid min-h-screen flex flex-col overflow-y-auto overflow-x-hidden relative">
+    
+    <!-- Background Gradient Glow -->
+    <div class="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-primary/10 blur-[120px] rounded-full pointer-events-none -z-10"></div>
+    <div class="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none -z-10"></div>
+
+    <!-- Nav Drawer Overlay -->
+    <div id="drawer-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden transition-opacity opacity-0 duration-300"></div>
+    
+    <!-- Slide-out Drawer Navigation -->
+    <aside id="nav-drawer" class="fixed top-0 left-0 h-full w-72 glass-panel border-r border-slate-800/80 z-50 transform -translate-x-full transition-transform duration-300 flex flex-col justify-between">
+        <div>
+            <!-- Header inside drawer -->
+            <div class="h-24 flex items-center justify-between px-8 border-b border-slate-800/80">
+                <a href="#" class="flex items-center gap-2 group">
+                    <img src="./assets/logo.png" alt="VoxTriad Logo" class="h-16 md:h-20 w-auto object-contain drop-shadow-md">
+                </a>
+                <button id="close-menu" class="text-slate-400 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <!-- Nav Links -->
+            <nav class="p-4 space-y-2 mt-4">
+                <a href="#" id="nav-dashboard" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 text-primary font-medium border border-primary/20 transition-all">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    Dashboard
+                </a>
+                <a href="#" id="nav-patient-history" class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 font-medium transition-all group">
+                    <i data-lucide="users" class="w-5 h-5 group-hover:text-primary transition-colors"></i>
+                    Patient History
+                </a>
+                <a href="#" id="nav-settings-link" class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 font-medium transition-all group">
+                    <i data-lucide="settings" class="w-5 h-5 group-hover:text-primary transition-colors"></i>
+                    Settings
+                </a>
+            </nav>
+        </div>
+
+        <div class="p-4">
+            <button id="btn-sign-out" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-danger hover:bg-danger/10 font-medium transition-all group">
+                <i data-lucide="log-out" class="w-5 h-5 group-hover:text-danger transition-colors"></i>
+                Sign Out
+            </button>
+            
+            <div class="mt-4 px-4 py-4 rounded-xl border border-slate-800 bg-slate-900/50 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-blue-500 p-[2px]">
+                    <div class="w-full h-full bg-background rounded-full flex items-center justify-center text-xs font-bold" id="user-profile-initials">DR</div>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-white" id="user-profile-name">Dr. Sarah Jen</p>
+                    <p class="text-xs text-slate-500 font-mono" id="user-profile-role">Clinician</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Topbar (Spacious py-8) -->
+    <header class="py-2 border-b border-slate-800/80 glass-panel sticky top-0 z-30 flex items-center justify-between px-6 sm:px-10">
+        <div class="flex items-center gap-6">
+            <!-- Hamburger Menu Icon -->
+            <button id="open-menu" class="text-slate-400 hover:text-primary transition-colors">
+                <i data-lucide="menu" class="w-7 h-7"></i>
+            </button>
+            <img src="./assets/logo.png" alt="VoxTriad Logo" class="h-auto w-24 md:w-32 object-contain mr-4">
+            <h1 class="text-2xl font-semibold tracking-tight hidden sm:block">Dashboard Overview</h1>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 w-full max-w-7xl mx-auto px-6 sm:px-10 pt-2 pb-20 space-y-6">
+
+        <!-- Centered Action Row (New Addition) -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-6 mb-2 animate-fade-up">
+            <!-- Primary Button -->
+            <button id="btn-new-scan" class="w-full sm:w-auto bg-primary hover:bg-primary-hover text-background px-10 py-4 rounded-full text-base font-bold transition-all duration-300 hover:scale-[1.05] shadow-[0_0_20px_rgba(34,211,238,0.4)] hover:shadow-[0_0_40px_rgba(34,211,238,0.7)] flex items-center justify-center gap-3">
+                <i data-lucide="scan" class="w-5 h-5"></i> New Scan
+            </button>
+            
+            <!-- Secondary Button -->
+            <button id="btn-patient-history" class="w-full sm:w-auto glass-panel border border-primary/50 text-white px-10 py-4 rounded-full text-base font-bold transition-all duration-300 hover:scale-[1.05] hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] hover:border-primary flex items-center justify-center gap-3">
+                <i data-lucide="history" class="w-5 h-5"></i> Patient History
+            </button>
+        </div>
+        
+        <!-- Quick Stats Row (Adjusted to 2 columns) -->
+        <div id="dashboard-main-view">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Stat 1 -->
+            <div class="glass-panel rounded-2xl p-8 interactive-card animate-fade-up stagger-1">
+                <div class="flex justify-between items-start mb-6">
+                    <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                        <i data-lucide="users" class="w-6 h-6"></i>
+                    </div>
+                    <span class="text-xs font-mono text-success flex items-center gap-1 bg-success/10 px-3 py-1.5 rounded-full border border-success/20">
+                        <i data-lucide="trending-up" class="w-3 h-3"></i> 12%
+                    </span>
+                </div>
+                <p class="text-slate-400 text-sm font-medium mb-2">Total Screenings Today</p>
+                <h3 id="dash-total-count" class="text-4xl font-bold font-mono tracking-tight counter" data-target="24">0</h3>
+            </div>
+
+            <!-- Stat 2 -->
+            <div class="glass-panel rounded-2xl p-8 interactive-card animate-fade-up stagger-2">
+                <div class="flex justify-between items-start mb-6">
+                    <div class="w-12 h-12 rounded-xl bg-danger/10 flex items-center justify-center text-danger">
+                        <i data-lucide="activity" class="w-6 h-6"></i>
+                    </div>
+                    <span class="text-xs font-mono text-danger flex items-center gap-1 bg-danger/10 px-3 py-1.5 rounded-full border border-danger/20">
+                        <i data-lucide="trending-up" class="w-3 h-3"></i> 4%
+                    </span>
+                </div>
+                <p class="text-slate-400 text-sm font-medium mb-2">High Risk Detected</p>
+                <h3 id="dash-high-risk-count" class="text-4xl font-bold font-mono tracking-tight counter" data-target="3">0</h3>
+            </div>
+
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Main Line Chart (Spans 2 columns) -->
+            <div class="glass-panel rounded-2xl p-8 lg:col-span-2 interactive-card animate-fade-up stagger-3 flex flex-col">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h3 class="text-xl font-bold">Screening Volume & Risk Trend</h3>
+                        <p class="text-sm text-slate-400 mt-1">Last 7 Days</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="px-4 py-2 rounded-lg bg-slate-800 text-xs font-medium text-white border border-slate-700 hover:bg-slate-700 transition-colors">Week</button>
+                    </div>
+                </div>
+                <div class="flex-grow relative w-full h-72">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Risk Tier Distribution (Circular Progress) -->
+            <div class="glass-panel rounded-2xl p-8 interactive-card animate-fade-up stagger-4 flex flex-col items-center justify-center relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-40 h-40 bg-danger/5 blur-[60px] rounded-full"></div>
+                
+                <h3 class="text-xl font-bold w-full text-left mb-2">Risk Tier Distribution</h3>
+                <p class="text-sm text-slate-400 w-full text-left mb-10">Current active cases</p>
+                
+                <div class="relative w-56 h-56 flex items-center justify-center">
+                    <svg viewBox="0 0 36 36" class="circular-chart w-full h-full transform -rotate-90">
+                        <path class="circle-bg"
+                        d="M18 2.0845
+                            a 15.9155 15.9155 0 0 1 0 31.831
+                            a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                        <!-- Low Risk (25%) -->
+                        <path id="dash-donut-low" class="circle stroke-success animate-draw-segment" 
+                              style="--dash: 25; stroke-dashoffset: 0;" 
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        
+                        <!-- Medium Risk (30%) -->
+                        <path id="dash-donut-medium" class="circle stroke-warning animate-draw-segment" 
+                              style="--dash: 30; stroke-dashoffset: -25;" 
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        
+                        <!-- High Risk (45%) -->
+                        <path id="dash-donut-high" class="circle stroke-danger animate-draw-segment" 
+                              style="--dash: 45; stroke-dashoffset: -55;" 
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    </svg>
+                    <!-- Center Overlay text -->
+                    <div class="absolute inset-0 flex flex-col items-center justify-center text-center mt-2">
+                        <span class="text-3xl font-bold font-mono tracking-tight text-danger glow-text">
+                            <span id="dash-donut-center" class="counter" data-target="45">0</span>
+                        </span>
+                        <span class="text-[10px] font-mono text-slate-400 uppercase tracking-widest mt-1">High Risk</span>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between w-full mt-10">
+                    <div class="flex flex-col items-center gap-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-danger"></span>
+                            <span id="dash-legend-high" class="text-xs font-semibold text-white">45%</span>
+                        </div>
+                        <span class="text-[10px] text-slate-500 uppercase font-mono">High</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-warning"></span>
+                            <span id="dash-legend-medium" class="text-xs font-semibold text-white">30%</span>
+                        </div>
+                        <span class="text-[10px] text-slate-500 uppercase font-mono">Med</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-success"></span>
+                            <span id="dash-legend-low" class="text-xs font-semibold text-white">25%</span>
+                        </div>
+                        <span class="text-[10px] text-slate-500 uppercase font-mono">Low</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Recent Patients Table -->
+        <div class="glass-panel rounded-2xl p-8 interactive-card animate-fade-up stagger-5">
+            <div class="flex justify-between items-center mb-8">
+                <h3 class="text-xl font-bold">Recent Screenings</h3>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[700px]">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-xs font-mono text-slate-500 uppercase tracking-wider">
+                            <th class="pb-4 font-medium pl-4">Patient ID</th>
+                            <th class="pb-4 font-medium">Date</th>
+                            <th class="pb-4 font-medium">Duration</th>
+                            <th class="pb-4 font-medium">Risk Assessment</th>
+                            <th class="pb-4 font-medium text-right pr-4">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dash-recent-table" class="text-sm">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        </div> <!-- End of dashboard-main-view -->
+
+        <!-- Patient History View -->
+        <div id="patient-history-view" class="hidden">
+            <div class="glass-panel rounded-2xl overflow-hidden interactive-card animate-fade-up">
+                <div class="p-6 border-b border-slate-800/80 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-white mb-1">Patient History</h2>
+                        <p class="text-sm text-slate-400">Comprehensive list of all screenings.</p>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <thead class="bg-slate-900/50 text-xs uppercase font-semibold text-slate-400 border-b border-slate-800">
+                            <tr>
+                                <th scope="col" class="px-6 py-4">Patient ID</th>
+                                <th scope="col" class="px-6 py-4">Name</th>
+                                <th scope="col" class="px-6 py-4">Age</th>
+                                <th scope="col" class="px-6 py-4">Acoustic</th>
+                                <th scope="col" class="px-6 py-4">Linguistic</th>
+                                <th scope="col" class="px-6 py-4 text-right">Video</th>
+                            </tr>
+                        </thead>
+                        <tbody id="patient-history-tbody" class="divide-y divide-slate-800/80">
+                            <!-- Injected rows go here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SETTINGS VIEW -->
+        <div id="settings-view" class="hidden p-6 sm:p-10 animate-fade-up w-full max-w-5xl mx-auto">
+            <h2 class="text-3xl font-bold text-white mb-8">Settings</h2>
+            
+            <div class="glass-panel rounded-2xl p-8 mb-6 border border-slate-800/80">
+                <h3 class="text-lg font-semibold text-white mb-4">Profile</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-2">Name</label>
+                        <input type="text" id="settings-name" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-2">Role</label>
+                        <input type="text" id="settings-role" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500">
+                    </div>
+                </div>
+                <button id="btn-save-profile" class="mt-6 bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg font-medium transition-colors">Save Changes</button>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-8 mb-6 border border-slate-800/80">
+                <h3 class="text-lg font-semibold text-white mb-4">Appearance</h3>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white font-medium">Theme Preference</p>
+                        <p class="text-sm text-slate-400 mt-1">Toggle between dark and light mode for the dashboard interface.</p>
+                    </div>
+                    <button id="btn-theme-toggle" class="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-medium transition-colors border border-slate-700">
+                        <i data-lucide="moon" class="w-4 h-4"></i>
+                        Toggle Theme
+                    </button>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-8 border border-danger/20 bg-danger/5">
+                <h3 class="text-lg font-semibold text-danger mb-4">Danger Zone</h3>
+                <p class="text-sm text-slate-400 mb-6">Permanently delete all patient history and screening records from your account. This action cannot be undone.</p>
+                <button id="btn-delete-all" class="flex items-center gap-2 px-6 py-3 rounded-xl bg-danger hover:bg-red-600 text-white font-semibold transition-colors shadow-lg shadow-danger/20">
+                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                    Delete All Patient History
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // --- Navigation Drawer Logic ---
+        const openMenuBtn = document.getElementById('open-menu');
+        const closeMenuBtn = document.getElementById('close-menu');
+        const navDrawer = document.getElementById('nav-drawer');
+        const drawerOverlay = document.getElementById('drawer-overlay');
+
+        function toggleMenu() {
+            const isClosed = navDrawer.classList.contains('-translate-x-full');
+            if (isClosed) {
+                navDrawer.classList.remove('-translate-x-full');
+                drawerOverlay.classList.remove('hidden');
+                setTimeout(() => {
+                    drawerOverlay.classList.remove('opacity-0');
+                    drawerOverlay.classList.add('opacity-100');
+                }, 10);
+            } else {
+                navDrawer.classList.add('-translate-x-full');
+                drawerOverlay.classList.remove('opacity-100');
+                drawerOverlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    drawerOverlay.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        openMenuBtn.addEventListener('click', toggleMenu);
+        closeMenuBtn.addEventListener('click', toggleMenu);
+        drawerOverlay.addEventListener('click', toggleMenu);
+
+        // --- Chart.js Line Chart (initialized on window for dynamic updates) ---
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(34, 211, 238, 0.4)');
+        gradient.addColorStop(1, 'rgba(34, 211, 238, 0)');
+
+        const last7Days = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            last7Days.push(d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' }));
+        }
+
+        window.trendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: last7Days,
+                datasets: [{
+                    label: 'Total Screenings',
+                    data: [0, 0, 0, 0, 0, 0, 0],
+                    borderColor: '#22D3EE',
+                    backgroundColor: gradient,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#0B1120',
+                    pointBorderColor: '#22D3EE',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 2000,
+                    easing: 'easeOutQuart'
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#0F172A',
+                        titleColor: '#fff',
+                        bodyColor: '#cbd5e1',
+                        borderColor: '#334155',
+                        borderWidth: 1,
+                        padding: 12,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y + ' Screenings';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(51, 65, 85, 0.3)',
+                            drawBorder: false,
+                        },
+                        ticks: {
+                            color: '#64748b',
+                            font: { family: "'JetBrains Mono', monospace", size: 10 }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false,
+                            drawBorder: false,
+                        },
+                        ticks: {
+                            color: '#64748b',
+                            font: { family: "'Inter', sans-serif", size: 12 }
+                        }
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index',
+                },
+            }
+        });
+
+        // --- Number Counter Animation ---
+        function animateCounters() {
+            const counters = document.querySelectorAll('.counter');
+            const speed = 40;
+            counters.forEach(counter => {
+                counter.innerText = '0';
+                const updateCount = () => {
+                    const target = +(counter.getAttribute('data-target') || 0);
+                    const count = +counter.innerText;
+                    const inc = target / speed;
+                    if (target > 0 && count < target) {
+                        if (target % 1 !== 0) {
+                            counter.innerText = (count + inc).toFixed(1);
+                        } else {
+                            counter.innerText = Math.ceil(count + inc);
+                        }
+                        setTimeout(updateCount, 40);
+                    } else {
+                        counter.innerText = target;
+                    }
+                };
+                setTimeout(updateCount, 200);
+            });
+        }
+
+        // --- Backend API Base URL ---
+        const API_BASE = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'
+            ? 'http://localhost:8000'
+            : '';
+
+        // --- Dashboard Data Fetch (Resilient with Mock Fallback) ---
+        async function loadDashboardData() {
+            let data = null;
+            let auth_id = '';
+            try {
+                if (window.supabaseClient) {
+                    const { data: sessionData } = await window.supabaseClient.auth.getSession();
+                    if (sessionData?.session?.user) {
+                        const user = sessionData.session.user;
+                        auth_id = user.id;
+
+                        // Update User Profile Card
+                        const profileNameEl = document.getElementById('user-profile-name');
+                        const profileInitialsEl = document.getElementById('user-profile-initials');
+                        if (profileNameEl && profileInitialsEl) {
+                            let fullName = user?.user_metadata?.full_name || user?.user_metadata?.name || '';
+                            if (!fullName && user?.email) fullName = user.email.split('@')[0];
+                            let initials = 'DR';
+                            if (fullName) {
+                                const parts = fullName.trim().split(/\s+/);
+                                if (parts.length > 1) {
+                                    initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                                } else if (parts[0].length > 0) {
+                                    initials = parts[0].substring(0, 2).toUpperCase();
+                                }
+                            }
+                            profileNameEl.textContent = fullName || 'User';
+                            profileInitialsEl.textContent = initials;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not get session for auth_id', e);
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/dashboard-stats?auth_id=${encodeURIComponent(auth_id)}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                data = await response.json();
+                console.info('[Dashboard] Loaded live data from API');
+            } catch (err) {
+                console.warn('[Dashboard] Fetch failed, using mock data:', err);
+                data = {
+                    total_today: 24,
+                    high_risk_today: 3,
+                    trend_7_days: [12, 19, 15, 25, 22, 10, 24],
+                    risk_distribution: { high: 45, medium: 30, low: 25 },
+                    recent_screenings: [
+                        { id: '#VT-8832', date: 'Today, 10:42 AM', duration: '01m 45s', risk: 'Low' },
+                        { id: '#VT-8831', date: 'Today, 09:15 AM', duration: '02m 10s', risk: 'Medium' },
+                        { id: '#VT-8830', date: 'Yesterday, 14:30 PM', duration: '01m 55s', risk: 'High' },
+                        { id: '#VT-8829', date: 'Yesterday, 11:20 AM', duration: '01m 30s', risk: 'Low' }
+                    ]
+                };
+            }
+
+            // ── Update Top Metrics ──────────────────────────────────────────
+            const totalCountEl = document.getElementById('dash-total-count');
+            if (totalCountEl) totalCountEl.setAttribute('data-target', data.total_today);
+            const highRiskCountEl = document.getElementById('dash-high-risk-count');
+            if (highRiskCountEl) highRiskCountEl.setAttribute('data-target', data.high_risk_today);
+
+            // ── Update Line Chart ──────────────────────────────────────────
+            if (window.trendChart && data.trend_7_days) {
+                window.trendChart.data.datasets[0].data = data.trend_7_days;
+                window.trendChart.update('active');
+            }
+
+            // ── Update Donut Chart ─────────────────────────────────────────
+            if (data.risk_distribution) {
+                const total = data.risk_distribution.high + data.risk_distribution.medium + data.risk_distribution.low;
+                let pctHigh = 0, pctMed = 0, pctLow = 0;
+                if (total > 0) {
+                    pctHigh = Math.round((data.risk_distribution.high / total) * 100);
+                    pctMed = Math.round((data.risk_distribution.medium / total) * 100);
+                    pctLow = 100 - pctHigh - pctMed;
+                }
+
+                const donutCenterEl = document.getElementById('dash-donut-center');
+                if (donutCenterEl) donutCenterEl.setAttribute('data-target', data.risk_distribution.high);
+
+                const legHighEl = document.getElementById('dash-legend-high');
+                if (legHighEl) legHighEl.innerText = data.risk_distribution.high;
+                const legMedEl = document.getElementById('dash-legend-medium');
+                if (legMedEl) legMedEl.innerText = data.risk_distribution.medium;
+                const legLowEl = document.getElementById('dash-legend-low');
+                if (legLowEl) legLowEl.innerText = data.risk_distribution.low;
+
+                const pathLow = document.getElementById('dash-donut-low');
+                if (pathLow) {
+                    pathLow.style.setProperty('--dash', pctLow);
+                    pathLow.style.strokeDashoffset = '0';
+                }
+                const pathMed = document.getElementById('dash-donut-medium');
+                if (pathMed) {
+                    pathMed.style.setProperty('--dash', pctMed);
+                    pathMed.style.strokeDashoffset = `-${pctLow}`;
+                }
+                const pathHigh = document.getElementById('dash-donut-high');
+                if (pathHigh) {
+                    pathHigh.style.setProperty('--dash', pctHigh);
+                    pathHigh.style.strokeDashoffset = `-${pctLow + pctMed}`;
+                }
+            }
+
+            // ── Update Recent Table ────────────────────────────────────────
+            const tbody = document.getElementById('dash-recent-table');
+            if (tbody && data.recent_screenings) {
+                tbody.innerHTML = '';
+                data.recent_screenings.forEach(scr => {
+                    let badgeClass, badgeDotClass, badgeText;
+                    if (scr.risk === 'Low') {
+                        badgeClass = 'bg-success/10 text-success border-success/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]';
+                        badgeDotClass = 'bg-success';
+                        badgeText = 'Low Risk';
+                    } else if (scr.risk === 'Medium') {
+                        badgeClass = 'bg-warning/10 text-warning border-warning/20 shadow-[0_0_10px_rgba(245,158,11,0.1)]';
+                        badgeDotClass = 'bg-warning animate-pulse';
+                        badgeText = 'Medium Risk';
+                    } else {
+                        badgeClass = 'bg-danger/10 text-danger border-danger/20 shadow-[0_0_10px_rgba(244,63,94,0.1)]';
+                        badgeDotClass = 'bg-danger animate-pulse';
+                        badgeText = 'High Risk';
+                    }
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors group';
+                    tr.innerHTML = `
+                        <td class="py-5 pl-4 font-mono font-medium text-white">${scr.id}</td>
+                        <td class="py-5 text-slate-400">${scr.date}</td>
+                        <td class="py-5 text-slate-400">${scr.duration}</td>
+                        <td class="py-5">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${badgeClass}">
+                                <span class="w-1.5 h-1.5 rounded-full ${badgeDotClass}"></span> ${badgeText}
+                            </span>
+                        </td>
+                        <td class="py-5 text-right pr-4">
+                            <button class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors">
+                                <i data-lucide="file-text" class="w-5 h-5"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                lucide.createIcons();
+            }
+
+            // Fire counters after updating targets
+            animateCounters();
+        }
+
+        // ── Phase 4: Supabase Realtime WebSocket ─────────────────────────
+        function initRealtimeSubscription() {
+            // Only set up if the Supabase client was properly initialized
+            if (!window.supabaseClient || !window.supabaseClient.channel) {
+                console.warn('[Dashboard] Supabase Realtime not available — live updates disabled.');
+                return;
+            }
+
+            const channel = window.supabaseClient
+                .channel('dashboard-live')
+                .on(
+                    'postgres_changes',
+                    { event: 'INSERT', schema: 'public', table: 'recordings' },
+                    (payload) => {
+                        console.info('[Realtime] New recording inserted:', payload.new?.id);
+                        // Short delay to allow features row to be written
+                        setTimeout(() => loadDashboardData(), 1500);
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    { event: 'INSERT', schema: 'public', table: 'features' },
+                    (payload) => {
+                        console.info('[Realtime] New features row inserted:', payload.new?.recording_id);
+                        loadDashboardData();
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    { event: 'UPDATE', schema: 'public', table: 'features' },
+                    (payload) => {
+                        console.info('[Realtime] Features row updated:', payload.new?.recording_id);
+                        loadDashboardData();
+                    }
+                )
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        console.info('[Realtime] ✓ Dashboard subscribed to live updates');
+                    } else {
+                        console.warn('[Realtime] Subscription status:', status);
+                    }
+                });
+
+            // Store reference for cleanup if needed
+            window._dashboardRealtimeChannel = channel;
+        }
+
+        // ── Init on DOMContentLoaded ─────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+            initRealtimeSubscription();
+
+            const newScanBtn = document.getElementById('btn-new-scan');
+            if (newScanBtn) {
+                newScanBtn.addEventListener('click', function() {
+                    sessionStorage.removeItem('vt_patient');
+                    localStorage.removeItem('currentPatientId');
+                    window.location.href = 'index.html';
+                });
+            }
+
+            const signoutBtn = document.getElementById('btn-sign-out');
+            if (signoutBtn) {
+                signoutBtn.addEventListener('click', function() {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = 'login.html';
+                });
+            }
+
+            const navDashboard = document.getElementById('nav-dashboard');
+            const navHistory = document.getElementById('nav-patient-history');
+            const navSettings = document.getElementById('nav-settings-link');
+            const mainView = document.getElementById('dashboard-main-view');
+            const historyView = document.getElementById('patient-history-view');
+            const settingsView = document.getElementById('settings-view');
+            const actionBtnHistory = document.getElementById('btn-patient-history');
+
+            function resetNav() {
+                [navDashboard, navHistory, navSettings].forEach(nav => {
+                    if (!nav) return;
+                    nav.classList.remove('bg-primary/10', 'text-primary', 'border', 'border-primary/20');
+                    nav.classList.add('text-slate-400');
+                });
+                [mainView, historyView, settingsView].forEach(view => {
+                    if (view) view.classList.add('hidden');
+                });
+            }
+
+            function setActiveNav(nav) {
+                if (!nav) return;
+                nav.classList.add('bg-primary/10', 'text-primary', 'border', 'border-primary/20');
+                nav.classList.remove('text-slate-400');
+            }
+
+            function showDashboard() {
+                resetNav();
+                mainView.classList.remove('hidden');
+                setActiveNav(navDashboard);
+                if (window.innerWidth < 1024) toggleMenu();
+            }
+
+            function showPatientHistory() {
+                resetNav();
+                historyView.classList.remove('hidden');
+                setActiveNav(navHistory);
+                loadPatientHistory();
+                if (window.innerWidth < 1024) toggleMenu();
+            }
+
+            async function showSettings() {
+                resetNav();
+                settingsView.classList.remove('hidden');
+                setActiveNav(navSettings);
+                
+                // Populate Settings metadata
+                try {
+                    const settingsName = document.getElementById('settings-name');
+                    const settingsRole = document.getElementById('settings-role');
+                    if (window.supabaseClient) {
+                        const { data: sessionData } = await window.supabaseClient.auth.getSession();
+                        if (sessionData?.session?.user) {
+                            const user = sessionData.session.user;
+                            let fullName = user?.user_metadata?.full_name || user?.user_metadata?.name || '';
+                            if (!fullName && user?.email) fullName = user.email.split('@')[0];
+                            let role = user?.user_metadata?.role || 'Clinician';
+                            if (settingsName) settingsName.value = fullName || 'User';
+                            if (settingsRole) settingsRole.value = role;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Failed to populate settings:', e);
+                }
+
+                if (window.innerWidth < 1024) toggleMenu();
+            }
+
+            // Save Settings Logic
+            const btnSaveProfile = document.getElementById('btn-save-profile');
+            if (btnSaveProfile) {
+                btnSaveProfile.addEventListener('click', async () => {
+                    const settingsName = document.getElementById('settings-name');
+                    const settingsRole = document.getElementById('settings-role');
+                    if (!settingsName || !settingsRole) return;
+
+                    const newName = settingsName.value.trim();
+                    const newRole = settingsRole.value.trim();
+
+                    try {
+                        const originalText = btnSaveProfile.textContent;
+                        btnSaveProfile.textContent = 'Saving...';
+                        btnSaveProfile.disabled = true;
+
+                        const { data, error } = await window.supabaseClient.auth.updateUser({
+                            data: { 
+                                full_name: newName,
+                                name: newName,
+                                role: newRole 
+                            }
+                        });
+
+                        if (error) {
+                            alert('Error updating profile: ' + error.message);
+                            btnSaveProfile.textContent = originalText;
+                            btnSaveProfile.disabled = false;
+                            return;
+                        }
+
+                        // Update Sidebar UI instantly
+                        const profileNameEl = document.getElementById('user-profile-name');
+                        const profileRoleEl = document.getElementById('user-profile-role');
+                        const profileInitialsEl = document.getElementById('user-profile-initials');
+                        
+                        if (profileNameEl) profileNameEl.textContent = newName || 'User';
+                        if (profileRoleEl) profileRoleEl.textContent = newRole || 'Clinician';
+                        
+                        if (profileInitialsEl && newName) {
+                            let initials = 'DR';
+                            const parts = newName.split(/\s+/);
+                            if (parts.length > 1) {
+                                initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                            } else if (parts[0].length > 0) {
+                                initials = parts[0].substring(0, 2).toUpperCase();
+                            }
+                            profileInitialsEl.textContent = initials;
+                        }
+
+                        btnSaveProfile.textContent = 'Saved!';
+                        setTimeout(() => {
+                            btnSaveProfile.textContent = originalText;
+                            btnSaveProfile.disabled = false;
+                        }, 2000);
+                        
+                    } catch (e) {
+                        console.error('Failed to update profile:', e);
+                        alert('An unexpected error occurred.');
+                        btnSaveProfile.disabled = false;
+                        btnSaveProfile.textContent = 'Save Changes';
+                    }
+                });
+            }
+
+            if (navDashboard) navDashboard.addEventListener('click', (e) => { e.preventDefault(); showDashboard(); });
+            if (navHistory) navHistory.addEventListener('click', (e) => { e.preventDefault(); showPatientHistory(); });
+            if (navSettings) navSettings.addEventListener('click', (e) => { e.preventDefault(); showSettings(); });
+            if (actionBtnHistory) actionBtnHistory.addEventListener('click', (e) => { e.preventDefault(); showPatientHistory(); });
+
+            // Theme Toggle Logic
+            const btnThemeToggle = document.getElementById('btn-theme-toggle');
+            if (btnThemeToggle) {
+                btnThemeToggle.addEventListener('click', () => {
+                    const isLight = document.body.classList.toggle('light-theme');
+                    const icon = btnThemeToggle.querySelector('i');
+                    if (isLight) {
+                        if (icon) icon.setAttribute('data-lucide', 'sun');
+                        document.body.style.backgroundColor = '#f8fafc'; // slate-50
+                    } else {
+                        if (icon) icon.setAttribute('data-lucide', 'moon');
+                        document.body.style.backgroundColor = '#0B1120';
+                    }
+                    lucide.createIcons();
+                });
+            }
+
+            // Delete All Logic
+            const btnDeleteAll = document.getElementById('btn-delete-all');
+            if (btnDeleteAll) {
+                btnDeleteAll.addEventListener('click', async () => {
+                    const confirmed = confirm("CAUTION: This will permanently delete all your patients and screening history. This cannot be undone. Proceed?");
+                    if (!confirmed) return;
+
+                    try {
+                        let auth_id = '';
+                        if (window.supabaseClient) {
+                            const { data: sessionData } = await window.supabaseClient.auth.getSession();
+                            if (sessionData?.session?.user) auth_id = sessionData.session.user.id;
+                        }
+                        
+                        if (!auth_id) {
+                            alert('Session expired. Please log in again.');
+                            return;
+                        }
+
+                        const response = await fetch(`http://127.0.0.1:8000/api/patients/all?auth_id=${encodeURIComponent(auth_id)}`, {
+                            method: 'DELETE'
+                        });
+
+                        if (response.ok) {
+                            alert("All patient history has been successfully deleted.");
+                            showDashboard();
+                            if (typeof loadDashboardData === 'function') loadDashboardData();
+                            if (typeof loadPatientHistory === 'function') loadPatientHistory();
+                        } else {
+                            const errData = await response.json().catch(() => ({}));
+                            alert(`Failed to delete records: ${errData.detail || response.statusText}`);
+                        }
+                    } catch (error) {
+                        console.error('Delete all failed:', error);
+                        alert("An error occurred while deleting records.");
+                    }
+                });
+            }
+            
+            async function loadPatientHistory() {
+                try {
+                    let auth_id = '';
+                    try {
+                        if (window.supabaseClient) {
+                            const { data: sessionData } = await window.supabaseClient.auth.getSession();
+                            if (sessionData?.session?.user) {
+                                auth_id = sessionData.session.user.id;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Could not get session for auth_id', e);
+                    }
+
+                    const response = await fetch(`http://127.0.0.1:8000/api/patients?auth_id=${encodeURIComponent(auth_id)}`);
+                    if (!response.ok) throw new Error("Failed to fetch history");
+                    const data = await response.json();
+                    
+                    const tbody = document.getElementById('patient-history-tbody');
+                    if (!tbody) return;
+                    
+                    tbody.innerHTML = ''; // clear
+                    
+                    if (!data || data.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-slate-500">No patients found.</td></tr>`;
+                        return;
+                    }
+                    
+                    data.forEach(item => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'hover:bg-slate-800/30 transition-colors group cursor-pointer';
+                        
+                        // Fallback to local getRiskBadge if window.getRiskBadge isn't loaded yet
+                        const getBadge = typeof window.getRiskBadge === 'function' ? window.getRiskBadge : function(riskLevel) {
+                            const level = (riskLevel || 'pending').toLowerCase();
+                            if (level === 'high') return `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border text-red-400 bg-red-500/10 border-red-500/20"><span class="w-1.5 h-1.5 rounded-full bg-current"></span>High</span>`;
+                            else if (level === 'medium') return `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border text-amber-400 bg-amber-500/10 border-amber-500/20"><span class="w-1.5 h-1.5 rounded-full bg-current"></span>Medium</span>`;
+                            else if (level === 'low') return `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border text-emerald-400 bg-emerald-500/10 border-emerald-500/20"><span class="w-1.5 h-1.5 rounded-full bg-current"></span>Low</span>`;
+                            else return `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border text-slate-400 bg-slate-800 border-slate-700/50"><span class="w-1.5 h-1.5 rounded-full bg-current"></span>Pending</span>`;
+                        };
+
+                        tr.innerHTML = `
+                            <td class="px-6 py-4 whitespace-nowrap font-mono text-xs text-slate-400 group-hover:text-primary transition-colors">${item.manual_id || item.id}</td>
+                            <td class="px-6 py-4 font-medium text-white">${item.full_name}</td>
+                            <td class="px-6 py-4 text-slate-400">${item.age}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${getBadge(item.acoustic_risk)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${getBadge(item.linguistic_risk)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right">${getBadge(item.video_risk)}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } catch (err) {
+                    console.error("Error loading patient history:", err);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VoxTriad – Clinician Sign In</title>
+  <meta name="description" content="Secure clinical authentication for the VoxTriad vocal biomarker screening platform." />
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            display: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+          },
+          colors: {
+            background: '#0B1120',
+            surface: '#0F172A',
+            primary: '#22D3EE',
+            'primary-hover': '#06B6D4',
+          },
+          boxShadow: {
+            'cyan-glow': '0 0 25px rgba(34, 211, 238, 0.4)',
+            'cyan-glow-lg': '0 0 40px rgba(34, 211, 238, 0.6)',
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Supabase JS SDK via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Central Supabase Client Configuration -->
+  <script src="config.js"></script>
+
+  <!-- Spline Web Component -->
+  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.72/build/spline-viewer.js"></script>
+
+  <style>
+    /* Glowing orb logo styling */
+    .glowing-orb {
+      background: radial-gradient(circle at 35% 35%, #80ffff 0%, #00F2FE 40%, #0284c7 75%, #0369a1 100%);
+      box-shadow: 0 0 20px rgba(0, 242, 254, 0.75), inset 0 0 8px rgba(255, 255, 255, 0.6);
+    }
+
+    /* Ambient lighting on 3D stage matching Framer preview */
+    .framer-ambient-glow {
+      background: radial-gradient(ellipse at 75% 35%, rgba(0, 242, 254, 0.20) 0%, rgba(13, 148, 136, 0.12) 35%, rgba(3, 7, 18, 0.85) 75%, #030712 100%);
+    }
+
+  </style>
+</head>
+
+<body class="bg-background text-slate-100 min-h-screen font-sans selection:bg-primary/30 selection:text-primary antialiased overflow-x-hidden">
+
+  <!-- ===================================================================
+       100vh FULL-SCREEN 50/50 SPLIT CONTAINER
+  ==================================================================== -->
+  <div class="min-h-screen grid grid-cols-1 lg:grid-cols-2">
+
+    <!-- =================================================================
+         LEFT HALF: BRAND STAGE
+    ================================================================== -->
+    <div class="relative framer-ambient-glow flex flex-col justify-between p-6 sm:p-10 lg:p-12 border-b lg:border-b-0 lg:border-r border-white/5 overflow-hidden">
+
+      <!-- Top Header: Logo + Brand Name (Links to Landing Page) -->
+      <div class="relative z-20">
+        <a href="landing.html" class="inline-flex items-center gap-3.5 group" title="Return to VoxTriad Home">
+          <img src="./assets/logo.png" alt="VoxTriad Logo" class="h-16 md:h-20 w-auto object-contain drop-shadow-md">
+        </a>
+      </div>
+
+      <!-- Spline Robot Embed (Scaled and shifted to crop out the baked-in WebGL 3D button) -->
+      <div class="absolute inset-0 z-10 overflow-hidden flex items-center justify-center">
+        <!-- Scale up and push down to crop the bottom portion of the canvas -->
+        <div class="w-[125%] h-[125%] transform translate-y-[18%]">
+          <spline-viewer class="w-full h-full" url="https://prod.spline.design/CdeghkCDhde4Wpzk/scene.splinecode"></spline-viewer>
+        </div>
+        
+        <!-- Seamless gradient overlay to smooth the bottom edge transition and hide the watermark -->
+        <div class="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-[#080d1a] via-[#080d1a]/95 to-transparent pointer-events-none z-50"></div>
+      </div>
+
+      <!-- Spacer for flex-between layout -->
+      <div class="relative z-20"></div>
+
+    </div>
+
+    <!-- =================================================================
+         RIGHT HALF: AUTHENTICATION FORM
+    ================================================================== -->
+    <div class="relative flex items-center justify-center p-6 sm:p-12 lg:p-16 bg-background">
+
+      <!-- Ambient glow behind auth card -->
+      <div class="absolute w-[450px] h-[450px] rounded-full bg-cyan-500/10 blur-[100px] pointer-events-none"></div>
+
+      <!-- Centered Glassmorphic Auth Card -->
+      <div class="w-full max-w-md bg-slate-900/50 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 sm:p-10 shadow-2xl relative z-10">
+
+
+
+        <h1 id="auth-title" class="font-display font-extrabold text-3xl sm:text-4xl text-white tracking-tight mt-3">
+          Welcome back.
+        </h1>
+        <p id="auth-subtitle" class="text-slate-400 text-sm mt-1.5 leading-relaxed">
+          Authenticate to access your clinical workspace.
+        </p>
+
+        <!-- Sign In / Sign Up Segmented Control -->
+        <div class="grid grid-cols-2 p-1 bg-slate-950/70 rounded-xl border border-white/10 my-6 text-sm font-medium">
+          <button
+            type="button"
+            id="tab-signin"
+            class="py-2.5 rounded-lg bg-primary/10 border border-primary/40 text-primary font-semibold shadow-[0_0_10px_rgba(34,211,238,0.2)] transition-all duration-200"
+          >
+            Sign In
+          </button>
+          <button
+            type="button"
+            id="tab-signup"
+            class="py-2.5 rounded-lg text-slate-400 hover:text-white transition-all duration-200"
+          >
+            Sign Up
+          </button>
+        </div>
+
+        <!-- Auth Form: Direct destination is dashboard.html (the new analytics dashboard) -->
+        <form id="login-form" action="dashboard.html" method="GET" class="space-y-4">
+
+          <!-- Email Address Field -->
+          <div>
+            <label for="email" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              Email Address
+            </label>
+            <div class="relative">
+              <input
+                type="email"
+                id="email"
+                name="email"
+                required
+                autocomplete="email"
+                placeholder="name@clinical.org"
+                value="clinician@hospital.org"
+                class="w-full px-4 py-3 rounded-xl bg-slate-950/80 border border-slate-700/80 text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 text-sm font-mono transition-all"
+              />
+            </div>
+          </div>
+
+          <!-- Password Field -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label for="password" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                Password
+              </label>
+              <a href="#" class="text-xs text-cyan-400 hover:text-cyan-300 transition-colors">
+                Forgot password?
+              </a>
+            </div>
+            <div class="relative">
+              <input
+                type="password"
+                id="password"
+                name="password"
+                required
+                autocomplete="current-password"
+                placeholder="Enter your password"
+                value="••••••••••••"
+                class="w-full px-4 py-3 rounded-xl bg-slate-950/80 border border-slate-700/80 text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 text-sm transition-all"
+              />
+            </div>
+          </div>
+
+          <!-- Clean Red Error Message Container -->
+          <div id="auth-error" class="hidden px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs sm:text-sm flex items-start gap-2.5">
+            <svg class="w-4 h-4 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <span id="auth-error-text">Invalid credentials</span>
+          </div>
+
+          <!-- Info / Confirmation Message Container -->
+          <div id="auth-info" class="hidden px-4 py-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs sm:text-sm flex items-start gap-2.5">
+            <svg class="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span id="auth-info-text"></span>
+          </div>
+
+          <!-- Primary Submit Button: Authenticate Session -->
+          <div class="pt-2">
+            <button
+              type="submit"
+              id="btn-authenticate"
+              class="w-full py-3.5 px-6 rounded-xl bg-primary hover:bg-primary-hover text-background font-sans font-bold text-sm tracking-wide shadow-[0_0_15px_rgba(34,211,238,0.3)] hover:shadow-[0_0_25px_rgba(34,211,238,0.5)] hover:brightness-105 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              <span id="btn-text">Authenticate Session</span>
+              <svg id="btn-spinner" class="hidden w-4 h-4 animate-spin text-slate-950" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+              <svg id="btn-icon" class="w-4 h-4 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- OR Divider -->
+          <div class="relative flex items-center justify-center my-6">
+            <div class="border-t border-slate-800 w-full"></div>
+            <span class="bg-[#0b1324] px-3 text-xs text-slate-500 uppercase font-mono tracking-widest absolute">
+              OR
+            </span>
+          </div>
+
+          <!-- Secondary Outlined Button: Continue with Google -->
+          <a
+            href="index.html"
+            id="btn-google"
+            class="w-full py-3 px-4 rounded-xl bg-slate-900/60 hover:bg-slate-800/80 border border-slate-700/70 text-slate-200 text-sm font-medium transition-all duration-200 flex items-center justify-center gap-3 shadow-sm hover:border-slate-600"
+          >
+            <!-- Google 'G' SVG Logo -->
+            <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+              />
+            </svg>
+            <span>Continue with Google</span>
+          </a>
+
+        </form>
+
+        <!-- Compliance Disclaimer -->
+        <p class="text-center text-xs text-slate-500 mt-6 leading-relaxed">
+          By continuing, you agree to secure clinical-data handling standards.
+        </p>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Supabase Authentication Handler -->
+  <script>
+    const tabSignIn = document.getElementById('tab-signin');
+    const tabSignUp = document.getElementById('tab-signup');
+    const authTitle = document.getElementById('auth-title');
+    const authSubtitle = document.getElementById('auth-subtitle');
+    const btnText = document.getElementById('btn-text');
+    const btnSpinner = document.getElementById('btn-spinner');
+    const btnIcon = document.getElementById('btn-icon');
+    const btnAuthenticate = document.getElementById('btn-authenticate');
+    const loginForm = document.getElementById('login-form');
+    const btnGoogle = document.getElementById('btn-google');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const authError = document.getElementById('auth-error');
+    const authErrorText = document.getElementById('auth-error-text');
+    const authInfo = document.getElementById('auth-info');
+    const authInfoText = document.getElementById('auth-info-text');
+
+    let currentMode = 'signin';
+
+    function showError(msg) {
+      if (!authError || !authErrorText) return;
+      authErrorText.textContent = msg || 'An error occurred during authentication.';
+      authError.classList.remove('hidden');
+      if (authInfo) authInfo.classList.add('hidden');
+    }
+
+    function showInfo(msg) {
+      if (!authInfo || !authInfoText) return;
+      authInfoText.textContent = msg;
+      authInfo.classList.remove('hidden');
+      if (authError) authError.classList.add('hidden');
+    }
+
+    function clearMessages() {
+      if (authError) authError.classList.add('hidden');
+      if (authInfo) authInfo.classList.add('hidden');
+    }
+
+    function setLoading(isLoading) {
+      if (!btnAuthenticate) return;
+      btnAuthenticate.disabled = isLoading;
+      if (isLoading) {
+        if (btnSpinner) btnSpinner.classList.remove('hidden');
+        if (btnIcon) btnIcon.classList.add('hidden');
+      } else {
+        if (btnSpinner) btnSpinner.classList.add('hidden');
+        if (btnIcon) btnIcon.classList.remove('hidden');
+      }
+    }
+
+    // Toggle: Sign In
+    tabSignIn.addEventListener('click', () => {
+      currentMode = 'signin';
+      tabSignIn.className = 'py-2.5 rounded-lg bg-primary/10 border border-primary/40 text-primary font-semibold shadow-[0_0_10px_rgba(34,211,238,0.2)] transition-all duration-200';
+      tabSignUp.className = 'py-2.5 rounded-lg text-slate-400 hover:text-white transition-all duration-200';
+      authTitle.textContent = 'Welcome back.';
+      authSubtitle.textContent = 'Authenticate to access your clinical workspace.';
+      btnText.textContent = 'Authenticate Session';
+      clearMessages();
+    });
+
+    // Toggle: Sign Up
+    tabSignUp.addEventListener('click', () => {
+      currentMode = 'signup';
+      tabSignUp.className = 'py-2.5 rounded-lg bg-primary/10 border border-primary/40 text-primary font-semibold shadow-[0_0_10px_rgba(34,211,238,0.2)] transition-all duration-200';
+      tabSignIn.className = 'py-2.5 rounded-lg text-slate-400 hover:text-white transition-all duration-200';
+      authTitle.textContent = 'Clinician Registration';
+      authSubtitle.textContent = 'Create a secure account for voice screening.';
+      btnText.textContent = 'Register Clinician Account';
+      clearMessages();
+    });
+
+    // Check if user already has an active session on load
+    (async function checkCurrentSession() {
+      try {
+        if (supabase && supabase.auth) {
+          const { data } = await supabase.auth.getSession();
+          if (data?.session?.user) {
+            console.info('[VoxTriad] Already authenticated as', data.session.user.email);
+            window.location.href = 'index.html';
+          }
+        }
+      } catch (err) {
+        console.warn('[VoxTriad] Session check error:', err);
+      }
+    })();
+
+    // Handle Sign In / Sign Up form submit
+    if (loginForm) {
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        clearMessages();
+
+        const email = emailInput ? emailInput.value.trim() : '';
+        const password = passwordInput ? passwordInput.value : '';
+
+        if (!email || !password) {
+          showError('Please provide both an email address and a password.');
+          return;
+        }
+
+        if (!supabase || !supabase.auth) {
+          showError('Supabase client is not available. Please check config.js credentials.');
+          return;
+        }
+
+        setLoading(true);
+
+        try {
+          if (currentMode === 'signin') {
+            // Real Supabase Email/Password Authentication
+            const { data, error } = await supabase.auth.signInWithPassword({
+              email: email,
+              password: password,
+            });
+
+            if (error) {
+              showError(error.message || 'Invalid credentials');
+              setLoading(false);
+              return;
+            }
+
+            if (data?.session) {
+              window.location.href = 'dashboard.html';
+              return;
+            }
+          } else {
+            // Real Supabase User Registration
+            const { data, error } = await supabase.auth.signUp({
+              email: email,
+              password: password,
+            });
+
+            if (error) {
+              showError(error.message || 'Sign up failed');
+              setLoading(false);
+              return;
+            }
+
+            if (data?.session) {
+              window.location.href = 'dashboard.html';
+              return;
+            } else if (data?.user && !data.user.confirmed_at) {
+              showInfo('Registration successful! Please check your email to confirm your account.');
+              setLoading(false);
+              return;
+            } else {
+              window.location.href = 'dashboard.html';
+              return;
+            }
+          }
+        } catch (err) {
+          showError(err.message || 'An unexpected authentication error occurred.');
+        } finally {
+          setLoading(false);
+        }
+      });
+    }
+
+    // Handle "Continue with Google" OAuth
+    if (btnGoogle) {
+      btnGoogle.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        clearMessages();
+
+        const client = window.supabaseClient || window.supabase || (typeof supabase !== 'undefined' ? supabase : null);
+
+        if (!client || !client.auth) {
+          showError('Supabase client is not available.');
+          return;
+        }
+
+        try {
+          const { error } = await client.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+              redirectTo: window.location.origin + '/frontend/dashboard.html',
+            },
+          });
+
+          if (error) {
+            showError(error.message || 'Google authentication failed.');
+          }
+        } catch (err) {
+          showError(err.message || 'Google authentication encountered an error.');
+        }
+      });
+    }
+  </script>
+
+</body>
+</html>
