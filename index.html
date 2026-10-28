@@ -3,7 +3,12 @@
   <head>
     <meta http-equiv="refresh" content="0; url=./frontend/index.html" />
     <script type="text/javascript">
-      window.location.href = "./frontend/index.html";
+      // Route OAuth callbacks directly to dashboard to process auth tokens; otherwise route to landing
+      if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
+        window.location.href = "./frontend/dashboard.html" + window.location.search + window.location.hash;
+      } else {
+        window.location.href = "./frontend/index.html";
+      }
     </script>
     <title>VoxTriad - Redirecting...</title>
   </head>
@@ -11,3 +16,4 @@
     <p>If you are not redirected automatically, <a href="./frontend/index.html">click here to open VoxTriad</a>.</p>
   </body>
 </html>
+
