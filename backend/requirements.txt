@@ -24,3 +24,4 @@ soundfile
 
 # Computer Vision (Facial Hypomimia Detection)
 opencv-python-headless
+mediapipe
