@@ -20,6 +20,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- jsPDF & AutoTable for client-side clinical report export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   <!-- html2pdf.js – client-side PDF export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script>
@@ -933,7 +936,7 @@
                   <p class="mb-2 text-xs uppercase tracking-[.18em] text-slate-500">Step 02 / Analysis</p>
                   <h2 class="text-xl font-medium text-white">Acoustic Biomarkers</h2>
                 </div>
-                <button id="btn-export-acoustic-pdf" class="flex items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-400/[.08] px-4 py-2 text-xs font-medium text-cyan-200 hover:bg-cyan-400/[.14] hover:shadow-[0_0_15px_rgba(6,182,212,.25)] transition-all">
+                <button id="btn-export-acoustic-pdf" onclick="exportClinicalPDF('Acoustic')" class="flex items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-400/[.08] px-4 py-2 text-xs font-medium text-cyan-200 hover:bg-cyan-400/[.14] hover:shadow-[0_0_15px_rgba(6,182,212,.25)] transition-all">
                   <i data-lucide="download" class="size-3.5"></i>Export PDF
                 </button>
               </div>
@@ -1135,7 +1138,7 @@
                   <p class="mb-2 text-xs uppercase tracking-[.18em] text-slate-500">Step 02 / Analysis</p>
                   <h2 class="text-xl font-medium text-white">Linguistic Biomarkers</h2>
                 </div>
-                <button id="btn-export-nlp-pdf" class="flex items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-400/[.08] px-4 py-2 text-xs font-medium text-cyan-200 hover:bg-cyan-400/[.14] hover:shadow-[0_0_15px_rgba(6,182,212,.25)] transition-all">
+                <button id="btn-export-nlp-pdf" onclick="exportClinicalPDF('Linguistic')" class="flex items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-400/[.08] px-4 py-2 text-xs font-medium text-cyan-200 hover:bg-cyan-400/[.14] hover:shadow-[0_0_15px_rgba(6,182,212,.25)] transition-all">
                   <i data-lucide="download" class="size-3.5"></i>Export PDF
                 </button>
               </div>
@@ -1383,7 +1386,7 @@
               </p>
             </div>
             
-            <button id="btn-export-vision-pdf" class="mt-8 flex mx-auto items-center justify-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-400/[.08] px-8 py-3 text-xs font-medium text-cyan-200 hover:bg-cyan-400/[.14] hover:shadow-[0_0_15px_rgba(6,182,212,.25)]">
+            <button id="btn-export-vision-pdf" onclick="exportClinicalPDF('Facial')" class="mt-8 flex mx-auto items-center justify-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-400/[.08] px-8 py-3 text-xs font-medium text-cyan-200 hover:bg-cyan-400/[.14] hover:shadow-[0_0_15px_rgba(6,182,212,.25)]">
               <i data-lucide="download" class="size-4"></i> Export Clinical PDF
             </button>
           </section>
