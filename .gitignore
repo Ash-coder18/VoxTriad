@@ -1,4 +1,4 @@
-# Byte-compiled / optimized / DLL files
+﻿# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
 *$py.class
@@ -150,7 +150,6 @@ activemq-data/
 # Environments
 backend/.env
 .env
-frontend/config.js
 backend/temp_audio/
 .envrc
 .venv
