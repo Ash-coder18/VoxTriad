@@ -21,3 +21,6 @@ pandas
 # Acoustic & Audio Processing
 librosa
 soundfile
+
+# Computer Vision (Facial Hypomimia Detection)
+opencv-python-headless

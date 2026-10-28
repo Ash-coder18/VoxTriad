@@ -27,7 +27,7 @@ var SUPABASE_ANON_KEY = typeof window !== 'undefined' && window.SUPABASE_ANON_KE
  *  DEMO OVERRIDE: Hardcoded to local backend for university live demo.
  *  The live GitHub Pages frontend calls the locally-running FastAPI instance.
  *  Revert to dynamic resolver after demo. */
-const API_BASE_URL = 'http://127.0.0.1:8000';
+const API_BASE_URL = 'https://voxtriad.onrender.com';
 
 // =============================================================================
 // 2. SUPABASE CLIENT INITIALISATION (with offline mock fallback)
@@ -662,7 +662,7 @@ async function loadPatientHistory(authId) {
   if (!tbody) return; // Fail gracefully if not on dashboard page
   
   try {
-    const response = await fetch(`http://127.0.0.1:8000/api/patients?auth_id=${encodeURIComponent(authId)}`);
+    const response = await fetch(`${API_BASE_URL}/api/patients?auth_id=${encodeURIComponent(authId)}`);
     if (!response.ok) throw new Error("Failed to fetch history");
     const data = await response.json();
     
