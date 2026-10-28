@@ -1,4 +1,4 @@
-﻿/**
+/**
  * VoxTriad Screener – Frontend Application Logic
  *
  * Responsibilities:
@@ -305,11 +305,18 @@ function exportClinicalPDF(analysisType, fallbackModality) {
 
   // 2. PATIENT DETAILS
   const pt = window.currentPatient || ((typeof window.vtGetPatient === 'function') ? window.vtGetPatient() : null) || {};
-  const patientId = pt.id || pt.manual_id || localStorage.getItem('currentPatientId') || 'PT-RECORDED';
-  const patientName = pt.name || document.getElementById('patient-name-display')?.textContent?.trim() || document.getElementById('patient-name-input')?.value?.trim() || 'Anonymous Patient';
-  let patientAge = pt.age || document.getElementById('patient-age-display')?.textContent?.replace(/[^0-9]/g, '') || document.getElementById('patient-age-input')?.value?.trim() || 'N/A';
-  if (patientAge !== 'N/A' && !patientAge.includes('yr')) patientAge += ' yrs';
-  const patientGender = pt.gender || document.getElementById('patient-gender-display')?.textContent?.trim() || document.getElementById('patient-gender-input')?.value?.trim() || 'Unspecified';
+  const patientId = String(pt.id || pt.manual_id || localStorage.getItem('currentPatientId') || 'PT-RECORDED').trim();
+  const patientName = String(pt.name || document.getElementById('patient-name-display')?.textContent || document.getElementById('patient-name-input')?.value || 'Anonymous Patient').trim();
+  
+  const rawAge = (pt.age !== undefined && pt.age !== null && pt.age !== '')
+    ? pt.age
+    : (document.getElementById('patient-age-display')?.textContent?.replace(/[^0-9]/g, '') || document.getElementById('patient-age-input')?.value || 'N/A');
+  let patientAge = String(rawAge).trim();
+  if (patientAge && patientAge !== 'N/A' && !patientAge.includes('yr')) {
+    patientAge += ' yrs';
+  }
+  
+  const patientGender = String(pt.gender || document.getElementById('patient-gender-display')?.textContent || document.getElementById('patient-gender-input')?.value || 'Unspecified').trim();
 
   // 3. ANALYSIS DETAILS & METRIC EXTRACTION
   let analysisTitle = '';
