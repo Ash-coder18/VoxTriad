@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
@@ -584,9 +584,9 @@
         }
 
         // --- Backend API Base URL ---
-        const API_BASE = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'
-            ? 'http://localhost:8000'
-            : '';
+        // DEMO OVERRIDE: Hardcoded to local backend for university live demo.
+        // Revert dynamic resolver after demo.
+        const API_BASE = 'http://127.0.0.1:8000';
 
         // --- Dashboard Data Fetch (Resilient with Mock Fallback) ---
         async function loadDashboardData() {

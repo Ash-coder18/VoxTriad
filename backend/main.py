@@ -198,6 +198,9 @@ _extra_origins = [o.strip() for o in _allowed_origins_env.split(",") if o.strip(
 
 origins = [
     "*",  # Dev phase – allow all origins to prevent silent CORS failures
+    # --- GitHub Pages (live demo) ---
+    "https://ash-coder18.github.io",
+    # --- Local development ---
     "http://127.0.0.1:5500",
     "http://localhost:5500",
     "http://127.0.0.1:8000",

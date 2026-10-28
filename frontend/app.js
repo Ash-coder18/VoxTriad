@@ -1,4 +1,4 @@
-/**
+﻿/**
  * VoxTriad Screener – Frontend Application Logic
  *
  * Responsibilities:
@@ -23,12 +23,11 @@ var SUPABASE_URL = typeof window !== 'undefined' && window.SUPABASE_URL ? window
 // Supabase anon key is set by config.js via window.SUPABASE_ANON_KEY
 var SUPABASE_ANON_KEY = typeof window !== 'undefined' && window.SUPABASE_ANON_KEY ? window.SUPABASE_ANON_KEY : '';
 
-/** Base URL of the FastAPI backend (dynamically resolves to loopback host). */
-const API_BASE_URL = (typeof window !== 'undefined' && window.API_BASE_URL)
-  ? window.API_BASE_URL
-  : (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')
-    ? 'http://127.0.0.1:8000'
-    : 'http://localhost:8000';
+/** Base URL of the FastAPI backend.
+ *  DEMO OVERRIDE: Hardcoded to local backend for university live demo.
+ *  The live GitHub Pages frontend calls the locally-running FastAPI instance.
+ *  Revert to dynamic resolver after demo. */
+const API_BASE_URL = 'http://127.0.0.1:8000';
 
 // =============================================================================
 // 2. SUPABASE CLIENT INITIALISATION (with offline mock fallback)
