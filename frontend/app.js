@@ -3005,7 +3005,7 @@ function initApp() {
   checkApiHealth();
   setInterval(checkApiHealth, 15000);
 
-  // Step 3: Secure index.html – verify active Supabase session on load
+  // Step 3: Secure screening.html – verify active Supabase session on load
   (async function checkExistingSession() {
     const authStatus = document.getElementById('auth-status');
     const authStatusText = document.getElementById('auth-status-text');

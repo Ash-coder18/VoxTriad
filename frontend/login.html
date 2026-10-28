@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -58,6 +58,18 @@
     }
 
   </style>
+
+    <!-- Session State Reset: purge leftover screening state on reaching login -->
+    <script>
+        (function () {
+            try {
+                sessionStorage.clear();
+                localStorage.removeItem('currentPatientId');
+                localStorage.removeItem('vt_patient');
+                localStorage.removeItem('patient_id');
+            } catch (e) { /* silently ignore storage errors */ }
+        })();
+    </script>
 </head>
 
 <body class="bg-background text-slate-100 min-h-screen font-sans selection:bg-primary/30 selection:text-primary antialiased overflow-x-hidden">
@@ -74,7 +86,7 @@
 
       <!-- Top Header: Logo + Brand Name (Links to Landing Page) -->
       <div class="relative z-20">
-        <a href="landing.html" class="inline-flex items-center gap-3.5 group" title="Return to VoxTriad Home">
+        <a href="index.html" class="inline-flex items-center gap-3.5 group" title="Return to VoxTriad Home">
           <img src="./assets/logo.png" alt="VoxTriad Logo" class="h-16 md:h-20 w-auto object-contain drop-shadow-md">
         </a>
       </div>
@@ -223,7 +235,7 @@
 
           <!-- Secondary Outlined Button: Continue with Google -->
           <a
-            href="index.html"
+            href="dashboard.html"
             id="btn-google"
             class="w-full py-3 px-4 rounded-xl bg-slate-900/60 hover:bg-slate-800/80 border border-slate-700/70 text-slate-200 text-sm font-medium transition-all duration-200 flex items-center justify-center gap-3 shadow-sm hover:border-slate-600"
           >
@@ -343,7 +355,7 @@
           const { data } = await supabase.auth.getSession();
           if (data?.session?.user) {
             console.info('[VoxTriad] Already authenticated as', data.session.user.email);
-            window.location.href = 'index.html';
+            window.location.href = 'dashboard.html';
           }
         }
       } catch (err) {
@@ -442,7 +454,7 @@
           const { error } = await client.auth.signInWithOAuth({
             provider: 'google',
             options: {
-              redirectTo: window.location.origin + '/frontend/dashboard.html',
+              redirectTo: window.location.href.replace(/[^/]*$/, 'dashboard.html'),
             },
           });
 

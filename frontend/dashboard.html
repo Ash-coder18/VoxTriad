@@ -795,7 +795,7 @@
                 newScanBtn.addEventListener('click', function() {
                     sessionStorage.removeItem('vt_patient');
                     localStorage.removeItem('currentPatientId');
-                    window.location.href = 'index.html';
+                    window.location.href = 'screening.html';
                 });
             }
 
@@ -981,7 +981,7 @@
                             return;
                         }
 
-                        const response = await fetch(`http://127.0.0.1:8000/api/patients/all?auth_id=${encodeURIComponent(auth_id)}`, {
+                        const response = await fetch(`${API_BASE}/api/patients/all?auth_id=${encodeURIComponent(auth_id)}`, {
                             method: 'DELETE'
                         });
 
@@ -1015,7 +1015,7 @@
                         console.warn('Could not get session for auth_id', e);
                     }
 
-                    const response = await fetch(`http://127.0.0.1:8000/api/patients?auth_id=${encodeURIComponent(auth_id)}`);
+                    const response = await fetch(`${API_BASE}/api/patients?auth_id=${encodeURIComponent(auth_id)}`);
                     if (!response.ok) throw new Error("Failed to fetch history");
                     const data = await response.json();
                     

@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- =====================================================================
+       VoxTriad Screener – Clinical Speech Screening Interface
+       Phase 1 | Parkinson's Disease Speech Analysis Platform
+  ====================================================================== -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="VoxTriad is a clinical-grade speech screening tool for early Parkinson's disease detection using AI-powered acoustic analysis." />
+  <meta name="theme-color" content="#0f172a" />
+  <title>VoxTriad Screener – Parkinson's Speech Analysis</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- html2pdf.js – client-side PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50:  '#ecfeff',
+              100: '#cffafe',
+              200: '#a5f3fc',
+              300: '#67e8f9',
+              400: '#22d3ee',
+              500: '#06b6d4',
+              600: '#0891b2',
+              700: '#0e7490',
+              800: '#155e75',
+              900: '#164e63',
+            },
+            surface: {
+              900: '#0f172a',
+              800: '#1e293b',
+              700: '#334155',
+              600: '#475569',
+            },
+            background: '#0B1120',
+            primary: '#22D3EE',
+            'primary-hover': '#06B6D4',
+            danger: '#F43F5E',
+            warning: '#F59E0B',
+            success: '#10B981',
+          },
+          animation: {
+            'pulse-slow':  'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'fade-in':     'fadeIn 0.4s ease-out forwards',
+            'slide-up':    'slideUp 0.5s ease-out forwards',
+            'ping-slow':   'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite',
+          },
+          keyframes: {
+            fadeIn:  { from: { opacity: '0' }, to: { opacity: '1' } },
+            slideUp: { from: { opacity: '0', transform: 'translateY(20px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+          },
+          boxShadow: {
+            'glow': '0 0 35px rgba(6, 182, 212, 0.45)',
+            'glow-sm': '0 0 20px rgba(6, 182, 212, 0.25)',
+            'cyan-glow': '0 0 25px rgba(0, 242, 254, 0.4)',
+            'cyan-glow-lg': '0 0 40px rgba(0, 242, 254, 0.6)',
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- 1. Supabase JS SDK via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- 2. Central Supabase Client Configuration -->
+  <script src="config.js"></script>
+  <!-- 3. Application logic (deferred to execute after config.js and on DOM ready) -->
+  <script src="app.js" defer></script>
+
+  <!-- Inline styles – Framer-matched design system -->
+  <style>
+    :root { color-scheme: dark; }
+    body { background-color: #0B1120; }
+
+    /* ── Ambient grid ── */
+    .bg-grid {
+      background-size: 40px 40px;
+      background-image:
+        linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+    }
+
+    /* ── Glassmorphism ── */
+    .glass { background:rgba(15,23,42,0.35); backdrop-filter:blur(20px) saturate(1.6); -webkit-backdrop-filter:blur(20px) saturate(1.6); border:1px solid rgba(255,255,255,0.08); }
+    .glass-deep { background:rgba(11,17,32,0.65); backdrop-filter:blur(24px) saturate(1.8); -webkit-backdrop-filter:blur(24px) saturate(1.8); border:1px solid rgba(255,255,255,0.09); }
+
+    .hidden { display: none !important; }
+
+    *, *::before, *::after {
+      transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+      transition-timing-function: cubic-bezier(0.4,0,0.2,1);
+      transition-duration: 150ms;
+    }
+
+    /* ═══════════════════════════════════════════════
+       FRAMER FLOATING CAPSULE HEADER
+    ═══════════════════════════════════════════════ */
+    .framer-topbar {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: rgba(11,19,43,0.80);
+      border: 1px solid rgba(51,65,85,0.70);
+      border-radius: 16px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .framer-patient-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px;
+      border-radius: 99px;
+      background: rgba(15,23,42,0.80);
+      border: 1px solid rgba(51,65,85,0.50);
+      font-size: 13px;
+      color: #cbd5e1;
+    }
+
+    /* ═══════════════════════════════════════════════
+       FRAMER PILL TAB BAR
+    ═══════════════════════════════════════════════ */
+    .framer-tab-container {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px;
+      border-radius: 99px;
+      background: rgba(15,23,42,0.70);
+      border: 1px solid rgba(51,65,85,0.70);
+    }
+    
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(51, 65, 85, 0.5);
+    }
+
+    .triad-tab {
+      color: #94a3b8;
+      background: transparent;
+      border: none;
+      border-radius: 99px;
+      padding: 8px 20px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .triad-tab-active {
+      color: #0B1120 !important;
+      background: #22E2E2 !important;
+      box-shadow: 0 0 25px rgba(34,226,226,0.50);
+    }
+    .triad-tab:not(.triad-tab-active):hover {
+      color: #e2e8f0;
+      background: rgba(255,255,255,0.05);
+    }
+
+    /* ═══════════════════════════════════════════════
+       FRAMER CAPTURE CARD
+    ═══════════════════════════════════════════════ */
+    .framer-card {
+      max-width: 720px;
+      margin: 0 auto;
+      background: rgba(14,22,38,0.70);
+      border: 1px solid rgba(51,65,85,0.50);
+      border-radius: 20px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 28px 32px 32px;
+    }
+    .framer-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .framer-step-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #22E2E2;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .framer-step-right {
+      font-size: 13px;
+      color: #94a3b8;
+      font-style: italic;
+    }
+
+    /* ── Waveform Display Well ── */
+    .framer-waveform-well {
+      background: #070C16;
+      border: 1px solid rgba(51,65,85,0.60);
+      border-radius: 16px;
+      height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .framer-waveform-well.recording {
+      border-color: rgba(244,63,94,0.30);
+    }
+    .framer-waveform-well.analyzing {
+      border-color: rgba(34,226,226,0.30);
+      opacity: 0.85;
+    }
+    .waveform-placeholder-text {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(100,116,139,0.60);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Waveform bars ── */
+    .waveform-bar {
+      width: 3px; border-radius: 2px;
+      background: linear-gradient(to top, #22E2E2, #67e8f9);
+      animation: waveAnim var(--dur, 1s) ease-in-out infinite alternate;
+      transform-origin: bottom;
+      box-shadow: 0 0 8px rgba(34,226,226,0.50);
+    }
+    @keyframes waveAnim {
+      from { transform: scaleY(0.12); }
+      to   { transform: scaleY(1); }
+    }
+
+    /* ── Waveform timer overlay ── */
+    .waveform-timer-overlay {
+      position: absolute;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      text-align: right;
+    }
+    .waveform-timer-overlay .timer-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 28px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+    .waveform-timer-overlay .rec-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: #f43f5e;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      justify-content: flex-end;
+      margin-top: 2px;
+    }
+    .waveform-timer-overlay .rec-badge .rec-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #f43f5e;
+      animation: recPulse 1s ease-in-out infinite;
+    }
+    @keyframes recPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .waveform-timer-overlay .captured-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: #22E2E2;
+      text-align: right;
+      margin-top: 2px;
+      letter-spacing: 0.06em;
+    }
+
+    /* ═══════════════════════════════════════════════
+       FRAMER RECORD BUTTON (Large, glowing)
+    ═══════════════════════════════════════════════ */
+    .framer-rec-btn {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: transform 0.2s, box-shadow 0.3s;
+    }
+    /* Idle – solid cyan */
+    .framer-rec-btn.idle {
+      background: #22E2E2;
+      box-shadow: 0 0 35px rgba(34,226,226,0.60), 0 0 80px rgba(34,226,226,0.20);
+    }
+    .framer-rec-btn.idle:hover {
+      transform: scale(1.06);
+      box-shadow: 0 0 50px rgba(34,226,226,0.70), 0 0 100px rgba(34,226,226,0.30);
+    }
+    .framer-rec-btn.idle svg,
+    .framer-rec-btn.idle i { color: #0B1120; width: 32px; height: 32px; }
+
+    /* Recording – solid rose/red, pulsing */
+    .framer-rec-btn.recording-active {
+      background: #f43f5e;
+      box-shadow: 0 0 35px rgba(244,63,94,0.60), 0 0 80px rgba(244,63,94,0.20);
+      animation: recBtnPulse 1.5s ease-in-out infinite;
+    }
+    .framer-rec-btn.recording-active svg,
+    .framer-rec-btn.recording-active i { color: #ffffff; width: 28px; height: 28px; }
+    @keyframes recBtnPulse {
+      0%, 100% { box-shadow: 0 0 35px rgba(244,63,94,0.60), 0 0 80px rgba(244,63,94,0.20); }
+      50% { box-shadow: 0 0 50px rgba(244,63,94,0.80), 0 0 100px rgba(244,63,94,0.35); }
+    }
+
+    /* Analyzing – spinner ring */
+    .framer-analyzing-spinner {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      border: 3px solid rgba(34,226,226,0.20);
+      border-top-color: #22E2E2;
+      animation: spin 1s linear infinite;
+      box-shadow: 0 0 25px rgba(34,226,226,0.30);
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ═══════════════════════════════════════════════
+       LEGACY COMPAT (kept for other panels)
+    ═══════════════════════════════════════════════ */
+    .record-btn {
+      position: relative; width: 88px; height: 88px; border-radius: 50%;
+      background: rgba(11,17,32,0.80); backdrop-filter: blur(12px);
+      border: 2px solid rgba(34,211,238,0.55);
+      box-shadow: 0 0 0 0 rgba(34,211,238,0), inset 0 0 20px rgba(34,211,238,0.06);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: border-color 0.3s, box-shadow 0.3s, transform 0.2s;
+    }
+    .record-btn:hover { border-color:rgba(34,211,238,0.90); box-shadow:0 0 28px rgba(34,211,238,0.40); transform:scale(1.04); }
+    .record-btn svg, .record-btn i { color:#22D3EE; width:30px; height:30px; }
+    .record-ripple { position:absolute; inset:0; border-radius:50%; border:2px solid rgba(34,211,238,0.40); animation:rippleOut 1.6s ease-out infinite; pointer-events:none; }
+    .record-ripple-2 { position:absolute; inset:-12px; border-radius:50%; border:2px solid rgba(34,211,238,0.20); animation:rippleOut 1.6s ease-out 0.5s infinite; pointer-events:none; }
+    @keyframes rippleOut { 0%{transform:scale(1);opacity:1;} 100%{transform:scale(1.5);opacity:0;} }
+
+    /* Audio player */
+    audio { display: none !important; }
+    .custom-player { display:flex; align-items:center; gap:12px; background:rgba(15,23,42,0.60); backdrop-filter:blur(10px); border:1px solid rgba(34,211,238,0.18); border-radius:12px; padding:10px 14px; }
+    .player-btn { flex-shrink:0; width:34px; height:34px; border-radius:50%; background:rgba(34,211,238,0.12); border:1px solid rgba(34,211,238,0.30); display:flex; align-items:center; justify-content:center; cursor:pointer; color:#22D3EE; }
+    .player-btn:hover { background:rgba(34,211,238,0.22); box-shadow:0 0 12px rgba(34,211,238,0.30); }
+    .player-progress-track { flex:1; height:4px; border-radius:99px; background:rgba(51,65,85,0.8); cursor:pointer; position:relative; overflow:hidden; }
+    .player-progress-fill { height:100%; width:0%; border-radius:99px; background:linear-gradient(90deg,#22D3EE,#67e8f9); transition:width 0.1s linear; box-shadow:0 0 8px rgba(34,211,238,0.45); }
+    .player-time { font-family:'JetBrains Mono',monospace; font-size:10px; color:#64748b; flex-shrink:0; white-space:nowrap; }
+
+    /* Intake gate */
+    #intake-gate.dismissing { animation: intakeFadeOut 0.45s ease forwards; }
+    @keyframes intakeFadeOut { to { opacity:0; transform:scale(0.97); pointer-events:none; } }
+
+    /* NLP bars */
+    @keyframes nlpBarIn { from { width:0%; } }
+    .nlp-bar-animate { animation: nlpBarIn 0.9s cubic-bezier(0.4,0,0.2,1) forwards; }
+    .passage-text { font-family:'Inter',Georgia,serif; font-size:0.95rem; line-height:1.85; color:#cbd5e1; letter-spacing:0.01em; }
+    .biomarker-bar { width: var(--bar-width, 50%); }
+
+    .mode-tab-active { background:linear-gradient(135deg,rgba(6,182,212,0.25) 0%,rgba(20,184,166,0.20) 100%); border-color:rgba(6,182,212,0.6); color:#67e8f9; box-shadow:0 0 15px rgba(6,182,212,0.25); }
+    .mode-tab-inactive { background:rgba(15,23,42,0.40); border-color:rgba(255,255,255,0.08); color:#94a3b8; }
+    input:focus { outline:none; box-shadow:0 0 0 2px rgba(34,211,238,0.6); }
+
+    .waveform-box { position:relative; overflow:hidden; border-radius:16px; background:rgba(2,6,23,0.70); }
+  </style>
+</head>
+<body class="min-h-screen overflow-x-hidden bg-[#080f1d] text-slate-100">
+
+  <!-- ===================================================================
+       PHASE 1 – PATIENT INTAKE GATE
+       Full-screen overlay shown before any screening begins.
+       Submitting stores data in sessionStorage and reveals the triad.
+  ==================================================================== -->
+  <div id="intake-gate" class="fixed inset-0 z-[100] flex items-center justify-center p-4 hidden" style="background:#0B1120">
+    <!-- Ambient glows -->
+    <div class="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full pointer-events-none" style="background:rgba(34,211,238,0.07);filter:blur(120px)"></div>
+    <div class="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full pointer-events-none" style="background:rgba(59,130,246,0.07);filter:blur(120px)"></div>
+
+    <div class="relative w-full max-w-lg">
+      <!-- Logo row -->
+      <div class="mb-8 flex flex-col items-center text-center gap-3">
+        <img src="./assets/logo.png" alt="VoxTriad Logo" class="h-16 md:h-20 w-auto object-contain drop-shadow-md">
+        <div class="mt-2">
+          <h1 class="text-xl font-semibold text-white">New Screening Session</h1>
+          <p class="text-sm text-slate-400 mt-1">Enter patient details to begin the triad assessment.</p>
+        </div>
+      </div>
+
+      <!-- Intake Form Card -->
+      <div class="rounded-2xl border p-8 shadow-2xl" style="background:rgba(15,23,42,0.70);border-color:rgba(51,65,85,0.6);backdrop-filter:blur(20px)">
+        <form id="intake-form" novalidate class="space-y-5">
+
+          <!-- Full Name -->
+          <div>
+            <label for="intake-name" class="block text-sm font-medium text-slate-300 mb-1.5">Full Name</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+              </div>
+              <input id="intake-name" type="text" autocomplete="name" placeholder="Patient full name" required
+                class="w-full pl-10 pr-4 py-2.5 rounded-xl text-white placeholder-slate-500 text-sm"
+                style="background:rgba(30,41,59,0.7);border:1px solid rgba(71,85,105,0.6);outline:none"
+                onfocus="this.style.boxShadow='0 0 0 2px rgba(34,211,238,0.45)'"
+                onblur="this.style.boxShadow='none'" />
+            </div>
+          </div>
+
+          <!-- Date of Birth + Sex (2-col) -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="intake-dob" class="block text-sm font-medium text-slate-300 mb-1.5">Date of Birth</label>
+              <input id="intake-dob" type="date" required
+                class="w-full px-3.5 py-2.5 rounded-xl text-white text-sm"
+                style="background:rgba(30,41,59,0.7);border:1px solid rgba(71,85,105,0.6);color-scheme:dark;outline:none"
+                onfocus="this.style.boxShadow='0 0 0 2px rgba(34,211,238,0.45)'"
+                onblur="this.style.boxShadow='none'" />
+            </div>
+            <div>
+              <label for="intake-sex" class="block text-sm font-medium text-slate-300 mb-1.5">Biological Sex</label>
+              <select id="intake-sex" required
+                class="w-full px-3.5 py-2.5 rounded-xl text-white text-sm appearance-none"
+                style="background:rgba(30,41,59,0.7);border:1px solid rgba(71,85,105,0.6);outline:none"
+                onfocus="this.style.boxShadow='0 0 0 2px rgba(34,211,238,0.45)'"
+                onblur="this.style.boxShadow='none'">
+                <option value="" class="bg-slate-900" disabled selected>Select…</option>
+                <option value="male" class="bg-slate-900">Male</option>
+                <option value="female" class="bg-slate-900">Female</option>
+                <option value="other" class="bg-slate-900">Other / Prefer not to say</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Validation error -->
+          <div id="intake-error" class="hidden rounded-xl px-4 py-3 text-sm text-red-300" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3)"></div>
+
+          <!-- Submit -->
+          <button id="intake-submit" type="submit"
+            class="mt-2 w-full py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300"
+            style="background:#22D3EE;color:#0B1120;box-shadow:0 0 20px rgba(34,211,238,0.35)">
+            Start Assessment &rarr;
+          </button>
+        </form>
+
+        <!-- Session note -->
+        <p class="mt-5 text-center text-xs text-slate-600">Session data is stored locally and transmitted only to your configured backend.</p>
+      </div>
+
+      <!-- Back to dashboard -->
+      <div class="mt-4 text-center">
+        <a href="dashboard.html" class="text-xs text-slate-500 hover:text-cyan-400 transition-colors">&larr; Back to Dashboard</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTH SECTION -->
+  <div id="auth-container" class="w-full">
+    <section id="auth-section" class="hidden flex flex-col items-center justify-center min-h-[80vh] animate-fade-in">
+
+        <!-- Hero text -->
+        <div class="text-center mb-10">
+          <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-500/10 border border-brand-500/25 mb-6">
+            <span class="w-2 h-2 rounded-full bg-brand-400 animate-pulse-slow"></span>
+            <span class="text-sm text-brand-300 font-medium">AI-Powered Clinical Screening</span>
+          </div>
+          <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight mb-4">
+            Early Parkinson's Detection<br/>
+            <span class="bg-gradient-to-r from-cyan-400 to-teal-300 bg-clip-text text-transparent">Through Voice Analysis</span>
+          </h1>
+          <p class="text-slate-400 text-lg max-w-xl mx-auto">
+            A clinician-grade speech screening platform using acoustic biomarkers and machine learning to support early diagnosis.
+          </p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="glass-deep rounded-2xl p-8 w-full max-w-md shadow-2xl ring-1 ring-white/10">
+
+          <!-- Card header -->
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+              <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              </svg>
+            </div>
+            <div>
+              <h2 id="auth-card-title" class="text-xl font-bold text-white">Clinician Sign In</h2>
+              <p id="auth-card-desc" class="text-slate-400 text-sm">Access your screening dashboard</p>
+            </div>
+          </div>
+
+          <!-- Form -->
+          <form id="auth-form" class="space-y-4" novalidate>
+
+            <!-- Email -->
+            <div>
+              <label for="auth-email" class="block text-sm font-medium text-slate-300 mb-1.5">Email address</label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                  </svg>
+                </div>
+                <input
+                  id="auth-email"
+                  type="email"
+                  autocomplete="email"
+                  placeholder="clinician@hospital.org"
+                  class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface-800/80 border border-slate-600/60 text-white placeholder-slate-500 text-sm font-mono hover:border-slate-500 focus:border-brand-500"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- Password -->
+            <div>
+              <label for="auth-password" class="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                  </svg>
+                </div>
+                <input
+                  id="auth-password"
+                  type="password"
+                  autocomplete="current-password"
+                  placeholder="••••••••"
+                  class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface-800/80 border border-slate-600/60 text-white placeholder-slate-500 text-sm hover:border-slate-500 focus:border-brand-500"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- Error message -->
+            <div id="auth-error" class="hidden px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm"></div>
+
+            <!-- Submit -->
+            <button
+              id="btn-login"
+              type="button"
+              class="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-950 font-bold text-sm hover:from-cyan-400 hover:to-teal-400 shadow-[0_0_20px_rgba(6,182,212,0.35)] hover:shadow-[0_0_30px_rgba(6,182,212,0.55)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <span id="btn-login-text">Sign In</span>
+              <svg id="btn-login-spinner" class="hidden w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+            </button>
+
+            <!-- Dev Demo Bypass Button -->
+            <button
+              id="btn-bypass-auth"
+              type="button"
+              class="w-full py-2.5 px-4 rounded-xl border border-slate-700 bg-surface-800/80 text-slate-300 font-medium text-sm hover:bg-slate-700/60 hover:text-white hover:border-slate-500 flex items-center justify-center gap-2 transition-colors"
+            >
+              <svg class="w-4 h-4 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>Bypass Authentication (Dev Demo)</span>
+            </button>
+
+          </form>
+
+          <!-- Divider -->
+          <div class="flex items-center gap-3 my-5">
+            <div class="flex-1 h-px bg-slate-700"></div>
+            <span class="text-xs text-slate-500 font-medium">or</span>
+            <div class="flex-1 h-px bg-slate-700"></div>
+          </div>
+
+          <!-- Register toggle -->
+          <p class="text-center text-sm text-slate-400">
+            <span id="toggle-auth-prompt">No account yet?</span>
+            <button id="btn-toggle-register" type="button" class="text-brand-400 font-medium hover:text-brand-300 underline underline-offset-2">Create one</button>
+          </p>
+
+        </div><!-- /auth card -->
+
+        <!-- Trust badges -->
+        <div class="flex flex-wrap justify-center gap-6 mt-8 text-slate-500 text-xs">
+          <span class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+            HIPAA-aligned architecture
+          </span>
+          <span class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-brand-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
+            Supabase Auth + RLS
+          </span>
+          <span class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-cyan-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+            Clinician-only access
+          </span>
+        </div>
+
+      </section><!-- /auth-section -->
+  </div>
+
+  <main id="app-container" class="min-h-screen bg-grid">
+    <!-- Nav Drawer Overlay -->
+    <div id="drawer-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden transition-opacity opacity-0 duration-300"></div>
+    
+    <!-- Slide-out Drawer Navigation -->
+    <aside id="nav-drawer" class="fixed top-0 left-0 h-full w-72 glass-panel border-r border-slate-800/80 z-50 transform -translate-x-full transition-transform duration-300 flex flex-col justify-between">
+        <div>
+            <!-- Header inside drawer -->
+            <div class="h-24 flex items-center justify-between px-8 border-b border-slate-800/80">
+                <a href="#" class="flex items-center gap-2 group">
+                    <img src="./assets/logo.png" alt="VoxTriad Logo" class="h-16 md:h-20 w-auto object-contain drop-shadow-md">
+                </a>
+                <button id="close-menu" class="text-slate-400 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <!-- Nav Links -->
+            <nav class="p-4 space-y-2 mt-4">
+                <a href="dashboard.html" id="menu-nav-dashboard" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 text-primary font-medium border border-primary/20 transition-all">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    Dashboard
+                </a>
+                <a href="dashboard.html" id="menu-patient-history" class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 font-medium transition-all group">
+                    <i data-lucide="users" class="w-5 h-5 group-hover:text-primary transition-colors"></i>
+                    Patient History
+                </a>
+                <a href="dashboard.html#settings" id="menu-settings-link" class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 font-medium transition-all group">
+                    <i data-lucide="settings" class="w-5 h-5 group-hover:text-primary transition-colors"></i>
+                    Settings
+                </a>
+            </nav>
+        </div>
+
+        <div class="p-4">
+            <button id="btn-sign-out" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-danger hover:bg-danger/10 font-medium transition-all group">
+                <i data-lucide="log-out" class="w-5 h-5 group-hover:text-danger transition-colors"></i>
+                Sign Out
+            </button>
+            
+            <div class="mt-4 px-4 py-4 rounded-xl border border-slate-800 bg-slate-900/50 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-blue-500 p-[2px]">
+                    <div class="w-full h-full bg-background rounded-full flex items-center justify-center text-xs font-bold" id="user-profile-initials">DR</div>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-white" id="user-profile-name">Dr. Sarah Jen</p>
+                    <p class="text-xs text-slate-500 font-mono" id="user-profile-role">Clinician</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+    <!-- Ambient background glows -->
+    <div class="fixed top-0 left-0 w-[40%] h-[40%] rounded-full pointer-events-none" style="background:rgba(34,211,238,0.05);filter:blur(120px);z-index:0"></div>
+    <div class="fixed bottom-0 right-0 w-[40%] h-[40%] rounded-full pointer-events-none" style="background:rgba(59,130,246,0.05);filter:blur(120px);z-index:0"></div>
+
+    <!-- ═══ MAIN APP HEADER (1st) ═══ -->
+    <header id="navbar" class="py-2 border-b border-slate-800/80 glass-panel sticky top-0 z-30 flex items-center justify-between px-6 sm:px-10">
+        <div class="flex items-center gap-6">
+            <!-- Hamburger Menu Icon -->
+            <button id="btn-hamburger" class="text-slate-400 hover:text-primary transition-colors">
+                <i data-lucide="menu" class="w-7 h-7"></i>
+            </button>
+            <img src="./assets/logo.png" alt="VoxTriad Logo" class="h-auto w-24 md:w-32 object-contain mr-4">
+            <h1 class="text-2xl font-semibold tracking-tight hidden sm:block">Patient Screening</h1>
+        </div>
+      <div class="flex items-center gap-3">
+        <div class="hidden items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[.06] px-3 py-1.5 text-xs text-emerald-300 sm:flex"><span class="size-1.5 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"></span>API online</div>
+        <div class="hidden h-5 w-px bg-white/10 sm:block"></div>
+        <div class="flex items-center gap-2.5">
+          <div class="flex size-8 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-teal-600 text-xs font-bold text-slate-950">Dr</div>
+          <span id="nav-user-email" class="hidden text-xs text-slate-300 sm:block">clinician@hospital.org</span>
+          <svg class="size-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+      </div> 
+    </header>
+
+    <!-- Patient banner (shown inside screening after intake) -->
+    <div id="patient-banner" class="hidden w-full" style="position:sticky;top:56px;z-index:30;background:rgba(11,17,32,0.92);border-bottom:1px solid rgba(34,211,238,0.18);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);">
+      <div class="max-w-7xl mx-auto px-6 lg:px-10 py-2 flex items-center justify-center gap-8">
+        <!-- Left: patient info chips -->
+        <div class="flex items-center gap-3 flex-wrap justify-center">
+          <div class="flex items-center gap-2 pr-3" style="border-right:1px solid rgba(51,65,85,0.6)">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center" style="background:rgba(34,211,238,0.12);border:1px solid rgba(34,211,238,0.25)">
+              <svg class="w-3 h-3 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            </div>
+            <span class="text-[10px] font-mono uppercase tracking-[.18em] text-slate-500">Patient</span>
+          </div>
+          <div id="patient-view-mode" class="flex items-center gap-3">
+            <span id="patient-manual-id-display" class="text-xs font-mono text-slate-400"></span>
+            <span id="patient-name-display" class="text-sm font-semibold text-white tracking-tight"></span>
+            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono" style="background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.20);color:#67e8f9">
+              <span id="patient-age-display"></span>
+            </span>
+            <span id="patient-gender-display" class="capitalize text-xs text-slate-400"></span>
+            
+            <button id="btn-edit-patient" class="ml-3 text-slate-400 hover:text-cyan-400 transition-colors focus:outline-none" title="Edit Patient">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+              </svg>
+            </button>
+
+            <!-- Live session indicator -->
+            <span class="hidden sm:inline-flex items-center gap-1.5 text-[10px] text-emerald-400 font-mono ml-4">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>SESSION ACTIVE
+            </span>
+          </div>
+          
+          <div id="patient-edit-mode" class="hidden flex items-center gap-2">
+            <input type="text" id="patient-manual-id" class="w-24 bg-slate-800/50 border border-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-cyan-500" placeholder="ID">
+            <input type="text" id="patient-name-input" class="bg-slate-800/50 border border-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-cyan-500" placeholder="Name">
+            <input type="number" id="patient-age-input" class="w-16 bg-slate-800/50 border border-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-cyan-500" placeholder="Age">
+            <select id="patient-gender-input" class="bg-slate-800/50 border border-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-cyan-500">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+            <button id="btn-save-patient" class="ml-2 text-emerald-400 hover:text-emerald-300 focus:outline-none" title="Save">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <!-- Right: back button -->
+        <a href="dashboard.html" class="flex items-center gap-1.5 text-xs font-medium transition-colors" style="color:rgba(34,211,238,0.80)" onmouseover="this.style.color='#22D3EE'" onmouseout="this.style.color='rgba(34,211,238,0.80)'">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          Return to Dashboard
+        </a>
+      </div>
+    </div>
+
+    <!-- Triad tab bar (shown inside screening after intake) -->
+    <div id="triad-tab-bar" class="hidden w-full" style="position:sticky;top:96px;z-index:35;background:rgba(11,17,32,0.88);border-bottom:1px solid rgba(51,65,85,0.40);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);">
+      <div class="flex items-center justify-center gap-2 py-2 px-6 mx-auto">
+        <button data-tab="acoustic" class="triad-tab triad-tab-active flex items-center gap-2">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+          Acoustic
+        </button>
+        <button data-tab="linguistic" class="triad-tab flex items-center gap-2">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z"/></svg>
+          Linguistic
+        </button>
+        <button data-tab="visual" class="triad-tab flex items-center gap-2">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.069A1 1 0 0121 8.82V15.18a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          Face Analysis
+        </button>
+      </div>
+    </div>
+      
+      <main id="view-dashboard" class="w-full">
+        
+        <!-- ACOUSTIC PANEL -->
+        <div id="view-acoustic" class="mx-auto max-w-5xl px-6 pt-2 pb-12 lg:px-10 lg:pb-12">
+          <!-- Centered page heading -->
+          <div class="mb-10 text-center">
+            <h1 class="text-3xl font-semibold tracking-[-0.04em] text-white lg:text-4xl">Acoustic Capture</h1>
+          </div>
+          
+          <!-- Centered single-column workspace -->
+          <div class="flex flex-col items-center justify-center w-full">
+
+            <!-- ══ Acoustic Capture Card (Framer Design) ══ -->
+            <section class="framer-card w-full max-w-4xl mx-auto" id="acoustic-framer-card">
+              <!-- Ambient glow inside card -->
+              <div class="absolute -right-16 -top-16 w-56 h-56 rounded-full pointer-events-none" style="background:rgba(34,226,226,0.05);filter:blur(60px)"></div>
+
+              <!-- Card header -->
+              <div class="framer-card-header flex justify-between items-center w-full">
+                <div>
+                  <p class="framer-step-label">Step 01 / Capture</p>
+                </div>
+              </div>
+
+              <!-- Error Banner (hidden by default) -->
+              <div id="audio-error-banner" class="hidden z-10 relative bg-rose-500/10 border border-rose-500/50 text-rose-400 p-4 rounded-lg mb-4 flex items-center gap-3 text-sm">
+                <i data-lucide="alert-triangle"></i>
+                <span id="audio-error-text"></span>
+              </div>
+
+              <!-- ── STATE 1: IDLE ── -->
+              <div id="state-idle" class="flex flex-col">
+                <!-- Capture Instructions -->
+                <div class="bg-cyan-900/10 border border-cyan-500/20 rounded-xl p-5 mb-6 max-w-lg mx-auto text-left">
+                  <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+                    <i data-lucide="info" class="w-4 h-4"></i> Capture Instructions
+                  </h4>
+                  <ul class="mt-3 space-y-2 text-sm text-slate-300 list-disc list-inside marker:text-cyan-500/50">
+                    <li>Ensure you are in a quiet environment with minimal background noise.</li>
+                    <li>Take a deep breath and produce a steady, sustained "ahhhh" sound.</li>
+                    <li>Hold the vowel continuously for 5 to 8 seconds before stopping.</li>
+                  </ul>
+                </div>
+
+                <!-- Waveform Display Well (Empty) -->
+                <div class="framer-waveform-well w-full h-40 flex items-center justify-center">
+                  <span class="waveform-placeholder-text">Awaiting audio input…</span>
+                </div>
+
+                <!-- Record Button Area -->
+                <div class="mt-8 flex flex-col items-center justify-center">
+                  <button id="btn-record" class="framer-rec-btn idle" aria-label="Start recording">
+                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                  </button>
+                  <p class="mt-4 text-xs font-semibold text-slate-400 uppercase tracking-widest">Tap to begin recording</p>
+                </div>
+                
+                <!-- Helper text for file upload (preserved) -->
+                <div class="text-center flex justify-center">
+                  <input type="file" id="audio-file-input" accept="audio/wav, audio/mp3, audio/webm, audio/ogg" class="hidden" />
+                  <button id="btn-browse-file" type="button" class="mt-6 inline-flex items-center gap-2 rounded-full bg-slate-800/50 border border-slate-700 px-5 py-2.5 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white transition-all">
+                    <i data-lucide="upload" class="w-4 h-4"></i>
+                    Or upload existing audio file
+                  </button>
+                </div>
+              </div>
+
+              <!-- ── STATE 2: RECORDING ── -->
+              <div id="state-recording" class="hidden flex-col">
+                <!-- Waveform Display Well (Recording) -->
+                <div class="framer-waveform-well recording w-full h-40 flex items-end justify-center relative">
+                  <!-- Animated Bars -->
+                  <div id="waveform-bars" class="flex items-end justify-center gap-1.5 h-full pb-4 w-full px-6" style="opacity: 0.8">
+                    <!-- Bars injected by app.js or CSS, we'll keep the ID that app.js uses if needed. Wait, app.js injects into #waveformBars if it exists. -->
+                    <div class="waveform-bar" style="--dur: 0.8s; height: 40%"></div>
+                    <div class="waveform-bar" style="--dur: 1.1s; height: 70%"></div>
+                    <div class="waveform-bar" style="--dur: 0.9s; height: 50%"></div>
+                    <div class="waveform-bar" style="--dur: 1.3s; height: 90%"></div>
+                    <div class="waveform-bar" style="--dur: 0.7s; height: 30%"></div>
+                    <div class="waveform-bar" style="--dur: 1.0s; height: 60%"></div>
+                    <div class="waveform-bar" style="--dur: 1.2s; height: 80%"></div>
+                    <div class="waveform-bar" style="--dur: 0.9s; height: 50%"></div>
+                    <div class="waveform-bar" style="--dur: 1.4s; height: 100%"></div>
+                    <div class="waveform-bar" style="--dur: 0.8s; height: 40%"></div>
+                  </div>
+                  
+                  <div class="waveform-timer-overlay">
+                    <div class="flex items-center gap-2 justify-end mb-1">
+                      <span class="text-[10px] text-slate-400 font-medium">Mic active · 48 kHz</span>
+                    </div>
+                    <div id="record-timer" class="timer-text">0:00</div>
+                    <div class="rec-badge"><div class="rec-dot"></div> REC</div>
+                  </div>
+                </div>
+
+                <!-- Stop Button Area -->
+                <div class="mt-8 flex flex-col items-center justify-center">
+                  <button id="btn-stop" class="framer-rec-btn recording-active" aria-label="Stop recording">
+                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+                  </button>
+                  <p class="mt-4 text-xs font-semibold text-rose-400 uppercase tracking-widest">Tap to stop recording</p>
+                </div>
+              </div>
+
+              <!-- ── STATE 3: ANALYZING ── -->
+              <div id="state-analyzing" class="hidden flex-col">
+                <div class="framer-waveform-well analyzing w-full h-40 flex items-end justify-center relative">
+                  <!-- Static dim bars to show it's processing -->
+                  <div class="flex items-end justify-center gap-1.5 h-full pb-4 w-full px-6 opacity-30">
+                    <div class="w-1 rounded-sm bg-cyan-400 h-[30%]"></div>
+                    <div class="w-1 rounded-sm bg-cyan-400 h-[50%]"></div>
+                    <div class="w-1 rounded-sm bg-cyan-400 h-[40%]"></div>
+                    <div class="w-1 rounded-sm bg-cyan-400 h-[80%]"></div>
+                    <div class="w-1 rounded-sm bg-cyan-400 h-[60%]"></div>
+                    <div class="w-1 rounded-sm bg-cyan-400 h-[40%]"></div>
+                  </div>
+                  <div class="waveform-timer-overlay">
+                    <div class="timer-text" style="color: #cbd5e1">0:00</div>
+                    <div class="captured-badge">CAPTURED</div>
+                  </div>
+                </div>
+
+                <div class="mt-8 flex flex-col items-center justify-center">
+                  <div class="framer-analyzing-spinner"></div>
+                  <p id="record-status" class="mt-6 text-sm font-semibold text-cyan-300">Analyzing vocal biomarkers... Please wait.</p>
+                </div>
+              </div>
+
+              <!-- Playback panel (hidden by default) - Preserved for upload/preview functionality -->
+              <div id="playback-panel" class="hidden mt-6">
+                <div class="my-5 h-px" style="background:rgba(255,255,255,0.06)"></div>
+                <audio id="audio-playback"></audio>
+                <div class="custom-player mb-4">
+                  <button id="custom-play-btn" class="player-btn" onclick="(function(){ const a=document.getElementById('audio-playback'); if(a.paused) a.play(); else a.pause(); })()">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  </button>
+                  <div class="player-progress-track" id="player-track">
+                    <div class="player-progress-fill" id="player-fill"></div>
+                  </div>
+                  <span class="player-time" id="player-time">0:00</span>
+                </div>
+
+                <button id="btn-upload" type="button" class="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-semibold text-cyan-200 transition-all border border-cyan-400/20 bg-cyan-400/10 hover:bg-cyan-400/20">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                  <span id="btn-upload-text">Analyse Audio</span>
+                  <svg id="btn-upload-spinner" class="hidden w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                </button>
+              </div>
+
+            </section>
+            
+            <!-- Acoustic Results Card -->
+            <!-- Acoustic Results Card -->
+            <section id="results-section" class="hidden w-full max-w-6xl mx-auto mt-12">
+              <div class="mb-6 flex justify-between items-end px-4">
+                <div>
+                  <p class="mb-2 text-xs uppercase tracking-[.18em] text-slate-500">Step 02 / Analysis</p>
+                  <h2 class="text-xl font-medium text-white">Acoustic Biomarkers</h2>
+                </div>
+                <button id="btn-export-acoustic-pdf" class="flex items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-400/[.08] px-4 py-2 text-xs font-medium text-cyan-200 hover:bg-cyan-400/[.14] hover:shadow-[0_0_15px_rgba(6,182,212,.25)] transition-all">
+                  <i data-lucide="download" class="size-3.5"></i>Export PDF
+                </button>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Card 1: PD Risk Probability -->
+                <div class="bg-slate-900/50 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 flex flex-col shadow-2xl">
+                  <div class="flex items-center gap-2 mb-6">
+                    <i data-lucide="activity" class="w-4 h-4 text-cyan-400"></i>
+                    <h3 class="text-sm font-semibold text-white">PD Risk Probability</h3>
+                    <div id="risk-badge" class="ml-auto hidden"></div>
+                  </div>
+                  <!-- Center donut -->
+                  <div class="flex-1 flex flex-col items-center justify-center mb-6 relative">
+                    <div class="relative flex items-center justify-center w-32 h-32">
+                      <svg class="w-full h-full transform -rotate-90" viewBox="0 0 32 32">
+                        <circle cx="16" cy="16" r="15.9155" fill="none" stroke="currentColor" stroke-width="3" class="text-slate-800" />
+                        <circle id="risk-chart-circle" cx="16" cy="16" r="15.9155" fill="none" stroke="currentColor" stroke-width="3" stroke-dasharray="100 100" stroke-dashoffset="100" class="text-cyan-400 transition-all duration-1000 ease-out" />
+                      </svg>
+                      <div class="absolute inset-0 flex flex-col items-center justify-center">
+                        <span id="risk-pct-label" class="text-3xl font-bold text-white">0%</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="border-t border-slate-800 pt-4">
+                    <p class="text-[11px] uppercase tracking-wider text-slate-500 mb-3 font-semibold">Per-model agreement</p>
+                    <div class="space-y-3">
+                      <div><div class="flex justify-between text-[11px] mb-1"><span class="text-slate-400">SVC</span><span id="lbl-svc" class="text-slate-300">-</span></div><div class="h-1 rounded bg-slate-800"><div id="bar-svc" class="h-full rounded bg-rose-400/70" style="width:0%"></div></div></div>
+                      <div><div class="flex justify-between text-[11px] mb-1"><span class="text-slate-400">Random Forest</span><span id="lbl-rf" class="text-slate-300">-</span></div><div class="h-1 rounded bg-slate-800"><div id="bar-rf" class="h-full rounded bg-amber-400/70" style="width:0%"></div></div></div>
+                      <div><div class="flex justify-between text-[11px] mb-1"><span class="text-slate-400">GBM</span><span id="lbl-gb" class="text-slate-300">-</span></div><div class="h-1 rounded bg-slate-800"><div id="bar-gb" class="h-full rounded bg-rose-400/70" style="width:0%"></div></div></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Card 2: Acoustic Biomarkers & Quality -->
+                <div class="bg-slate-900/50 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 shadow-2xl">
+                  <div class="flex items-center justify-between mb-8">
+                    <h3 class="text-sm font-semibold text-white">Acoustic Features</h3>
+                    <div class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono text-emerald-400">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> High Quality
+                    </div>
+                  </div>
+                  <div class="space-y-7" id="acoustic-results-container"> 
+                    <div><div class="mb-2 flex items-center justify-between text-xs"><span class="text-slate-300">Shimmer</span><span id="lbl-shimmer" class="font-mono text-cyan-300">0%</span></div><div class="h-2 overflow-hidden rounded-full bg-slate-800"><div id="bar-shimmer" class="h-full rounded-full bg-gradient-to-r from-cyan-400 to-cyan-300 transition-all duration-1000 ease-out" style="width:0%"></div></div></div> 
+                    <div><div class="mb-2 flex items-center justify-between text-xs"><span class="text-slate-300">Jitter</span><span id="lbl-jitter" class="font-mono text-cyan-300">0%</span></div><div class="h-2 overflow-hidden rounded-full bg-slate-800"><div id="bar-jitter" class="h-full rounded-full bg-gradient-to-r from-teal-400 to-cyan-300 transition-all duration-1000 ease-out" style="width:0%"></div></div></div> 
+                    <div><div class="mb-2 flex items-center justify-between text-xs"><span class="text-slate-300">HNR</span><span id="lbl-hnr" class="font-mono text-cyan-300">0 dB</span></div><div class="h-2 overflow-hidden rounded-full bg-slate-800"><div id="bar-hnr" class="h-full rounded-full bg-gradient-to-r from-sky-400 to-teal-300 transition-all duration-1000 ease-out" style="width:0%"></div></div></div> 
+                  </div>
+                </div>
+
+                <!-- Card 3: Neurologist Summary -->
+                <div class="bg-slate-900/50 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 flex flex-col shadow-2xl">
+                  <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-sm font-semibold text-white">Neurologist Summary</h3>
+                    <div id="llm-source-badge" class="hidden px-2 py-1 rounded-md bg-cyan-500/20 text-[10px] font-mono text-cyan-300 font-medium border border-cyan-500/20">Groq AI</div>
+                  </div>
+                  <div class="overflow-y-auto h-72 text-sm text-slate-300 pr-4 leading-loose space-y-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-slate-600">
+                    <div id="summary-skeleton" class="hidden animate-pulse space-y-3">
+                      <div class="h-3 bg-slate-700/50 rounded w-3/4"></div>
+                      <div class="h-3 bg-slate-700/50 rounded w-full"></div>
+                      <div class="h-3 bg-slate-700/50 rounded w-5/6"></div>
+                    </div>
+                    <div id="summary-text">
+                      <p>The acoustic profile suggests early indications of hypophonia, characterized by reduced vocal intensity and elevated shimmer variability.</p>
+                      <p>Jitter levels remain within normal thresholds, but harmonic-to-noise ratio (HNR) shows slight degradation consistent with mild vocal fold rigidity.</p>
+                      <p><strong>Recommendation:</strong> Schedule follow-up linguistic assessment to correlate findings with cognitive decline markers.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section> 
+          </div> 
+        </div>
+
+        <!-- LINGUISTIC PANEL -->
+        <div id="view-linguistic" class="hidden mx-auto max-w-5xl px-6 pt-2 pb-12 lg:px-10 lg:pb-12">
+          <!-- Centered page heading -->
+          <div class="mb-10 text-center">
+            <div class="mb-3 inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[.22em] text-cyan-400">
+              <span class="size-1.5 rounded-full bg-cyan-400 animate-pulse"></span>Live assessment
+            </div>
+            <h1 class="text-3xl font-semibold tracking-[-0.04em] text-white lg:text-4xl">Linguistic Capture</h1>
+            <p class="mt-2 text-sm leading-6 text-slate-500 max-w-lg mx-auto">Read the Rainbow Passage aloud to generate NLP biomarkers.</p>
+          </div>
+          
+          <!-- Centered single-column workspace -->
+          <div class="flex flex-col items-center justify-center w-full">
+
+            <!-- ══ Linguistic Capture Card ══ -->
+            <section class="framer-card w-full max-w-4xl mx-auto" id="linguistic-framer-card">
+              <!-- Ambient glow inside card -->
+              <div class="absolute -right-16 -top-16 w-56 h-56 rounded-full pointer-events-none" style="background:rgba(34,226,226,0.05);filter:blur(60px)"></div>
+
+              <!-- Card header -->
+              <div class="framer-card-header flex justify-between items-center w-full">
+                <div>
+                  <p class="framer-step-label">Step 01 / Capture</p>
+                </div>
+                <div class="framer-step-right">
+                  Passage Reading
+                </div>
+              </div>
+
+              <!-- Error Banner (hidden by default) -->
+              <div id="nlp-error-banner" class="hidden z-10 relative bg-rose-500/10 border border-rose-500/50 text-rose-400 p-4 rounded-lg mb-4 flex items-center gap-3 text-sm">
+                <i data-lucide="alert-triangle"></i>
+                <span id="nlp-error-text"></span>
+              </div>
+
+              <!-- Reading Passage (Persistent) -->
+              <p class="mb-6 rounded-xl bg-surface-800/70 border border-white/[.06] p-5 shadow-inner text-sm text-slate-300 leading-relaxed font-serif text-center relative z-10">
+                When the sunlight strikes raindrops in the air, they act as a prism and form a rainbow. The rainbow is a division of white light into many beautiful colors. These take the shape of a long round arch, with its path high above, and its two ends apparently beyond the horizon.
+              </p>
+
+              <!-- ── STATE 1: IDLE ── -->
+              <div id="ling-state-idle" class="flex flex-col">
+                <div class="mt-8 flex flex-col items-center justify-center relative z-10">
+                  <p id="nlp-record-status" class="mb-5 text-xs text-slate-500">Position the patient comfortably before recording</p>
+                  
+                  <button id="btn-nlp-record" class="framer-rec-btn idle" aria-label="Start recording">
+                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                  </button>
+                  <!-- Ghost elements to preserve app.js DOM IDs without breaking visual flow -->
+                  <i id="nlp-icon-mic" class="hidden"></i>
+                  <i id="nlp-icon-stop" class="hidden"></i>
+                  <div id="nlp-record-ring-1" class="hidden"></div>
+                  <div id="nlp-record-ring-2" class="hidden"></div>
+
+                  <p class="mt-4 text-xs font-semibold text-slate-400 uppercase tracking-widest">Tap to begin recording</p>
+                  <button id="btn-nlp-upload-proxy" type="button" class="mt-6 inline-flex items-center gap-2 rounded-full bg-slate-800/50 border border-slate-700 px-5 py-2.5 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white transition-all focus:outline-none">
+                    <i data-lucide="upload" class="w-4 h-4"></i>
+                    Or upload existing audio file
+                  </button>
+                  <input type="file" id="nlp-file-upload" class="hidden" accept="audio/*">
+                </div>
+              </div>
+
+              <!-- ── STATE 2: ACTIVE ── -->
+              <div id="ling-state-active" class="hidden flex-col">
+                <!-- Waveform Display Well (Recording) -->
+                <div class="framer-waveform-well recording w-full h-40 flex items-end justify-center relative bg-[#0B1121]/80 rounded-xl overflow-hidden mb-6">
+                  <!-- Live Canvas Waveform -->
+                  <canvas id="nlp-waveform-canvas" class="w-full h-full absolute inset-0"></canvas>
+                  
+                  <!-- Timer overlay -->
+                  <div class="waveform-timer-overlay absolute top-4 right-4 text-right z-10">
+                    <div class="flex items-center gap-2 justify-end mb-1">
+                      <span class="text-[10px] text-slate-400 font-medium">Mic active · 48 kHz</span>
+                    </div>
+                    <div id="nlp-record-timer" class="font-mono text-2xl font-bold text-white tabular-nums">0:00</div>
+                    <div id="nlp-rec-indicator" class="rec-badge mt-1 flex items-center justify-end gap-1.5"><div class="rec-dot w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></div> <span class="text-[10px] text-rose-500 font-bold tracking-widest uppercase">REC</span></div>
+                  </div>
+
+                  <!-- Live STT space -->
+                  <div id="nlp-listening-text" class="absolute bottom-4 left-0 right-0 text-center text-xs text-slate-400 italic px-6 truncate z-10">Listening...</div>
+                </div>
+
+                <!-- Stop Button Area -->
+                <div class="flex flex-col items-center justify-center">
+                  <button id="btn-nlp-stop" class="framer-rec-btn recording-active" aria-label="Stop recording">
+                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+                  </button>
+                  <p id="nlp-stop-text" class="mt-4 text-xs font-semibold text-rose-400 uppercase tracking-widest">Tap to stop</p>
+                </div>
+              </div>
+
+              <!-- ── ANALYZE STATE ── -->
+              <div id="nlp-playback-panel" class="hidden flex-col items-center w-full mt-6">
+                <!-- Custom audio player matching Acoustic tab -->
+                <audio id="nlp-audio-playback" class="hidden"></audio>
+                <div class="custom-player mb-4 w-full">
+                  <button id="nlp-custom-play-btn" type="button" class="player-btn" onclick="(function(){ const a=document.getElementById('nlp-audio-playback'); if(a.paused) a.play(); else a.pause(); })()">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  </button>
+                  <div class="player-progress-track flex-1" id="nlp-player-track" onclick="(function(e){ const a=document.getElementById('nlp-audio-playback'); const t=document.getElementById('nlp-player-track'); if(a.duration){ const rect=t.getBoundingClientRect(); const percent=(e.clientX-rect.left)/rect.width; a.currentTime=percent*a.duration; } })()">
+                    <div class="player-progress-fill" id="nlp-player-fill"></div>
+                  </div>
+                  <span class="player-time" id="nlp-player-time">0:00</span>
+                </div>
+                <button id="btn-nlp-analyze" type="button" class="w-full flex items-center justify-center gap-3 rounded-xl py-4 text-sm font-bold text-slate-900 transition-all bg-gradient-to-r from-cyan-400 to-teal-400 shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] hover:from-cyan-300 hover:to-teal-300">
+                  <i data-lucide="brain" class="size-4"></i>
+                  <span id="btn-nlp-analyze-text">Generate Linguistic Biomarkers</span>
+                  <svg id="btn-nlp-analyze-spinner" class="hidden w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                </button>
+                <button id="btn-nlp-rerecord" type="button" class="mt-4 w-full flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-semibold text-slate-400 transition-all border border-slate-700 bg-slate-800/50 hover:bg-slate-700 hover:text-white">
+                  <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                  Re-record Passage
+                </button>
+              </div>
+
+            </section>
+
+            <!-- ── STATE 3: RESULTS ── -->
+            <section id="nlp-results-section" class="hidden w-full max-w-6xl mx-auto mt-12">
+              <div class="mb-6 flex justify-between items-end px-4">
+                <div>
+                  <p class="mb-2 text-xs uppercase tracking-[.18em] text-slate-500">Step 02 / Analysis</p>
+                  <h2 class="text-xl font-medium text-white">Linguistic Biomarkers</h2>
+                </div>
+                <button id="btn-export-nlp-pdf" class="flex items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-400/[.08] px-4 py-2 text-xs font-medium text-cyan-200 hover:bg-cyan-400/[.14] hover:shadow-[0_0_15px_rgba(6,182,212,.25)] transition-all">
+                  <i data-lucide="download" class="size-3.5"></i>Export PDF
+                </button>
+              </div>
+
+              <div id="ling-state-results" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Card 1: Risk Indicator -->
+                <div class="bg-slate-900/50 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 flex flex-col shadow-2xl">
+                  <div class="flex items-center gap-2 mb-6">
+                    <i data-lucide="activity" class="w-4 h-4 text-cyan-400"></i>
+                    <h3 class="text-sm font-semibold text-white">Risk Indicator</h3>
+                  </div>
+                  <!-- Center donut -->
+                  <div class="flex-1 flex flex-col items-center justify-center mb-6 relative">
+                    <div class="relative flex items-center justify-center w-32 h-32">
+                      <svg class="w-full h-full transform -rotate-90" viewBox="0 0 32 32">
+                        <circle cx="16" cy="16" r="15.9155" fill="none" stroke="currentColor" stroke-width="3" class="text-slate-800" />
+                        <circle id="nlp-risk-chart-circle" cx="16" cy="16" r="15.9155" fill="none" stroke="currentColor" stroke-width="3" stroke-dasharray="100 100" stroke-dashoffset="100" class="text-cyan-400 transition-all duration-1000 ease-out" />
+                      </svg>
+                      <div class="absolute inset-0 flex flex-col items-center justify-center">
+                        <span id="nlp-risk-val" class="text-3xl font-bold text-white">-</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="border-t border-slate-800 pt-4">
+                    <p class="text-[11px] uppercase tracking-wider text-slate-500 mb-3 font-semibold">Identified Markers</p>
+                    <div id="nlp-markers-list" class="space-y-2 text-sm text-slate-300">
+                      <!-- Markers injected by app.js -->
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Card 2: Linguistic Metrics -->
+                <div class="bg-slate-900/50 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 shadow-2xl">
+                  <div class="flex items-center justify-between mb-8">
+                    <h3 class="text-sm font-semibold text-white">Linguistic Features</h3>
+                  </div>
+                  <div class="space-y-7">
+                    <div>
+                      <div class="mb-2 flex items-center justify-between text-xs">
+                        <span class="text-slate-300">Type-Token Ratio</span>
+                        <span id="nlp-ttr-val" class="font-mono text-cyan-300">0.0</span>
+                      </div>
+                      <div class="h-2 overflow-hidden rounded-full bg-slate-800">
+                        <div id="nlp-ttr-bar" class="h-full rounded-full bg-gradient-to-r from-cyan-400 to-cyan-300 transition-all duration-1000 ease-out" style="width:0%"></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="mb-2 flex items-center justify-between text-xs">
+                        <span class="text-slate-300">Avg Sentence Length</span>
+                        <span id="nlp-asl-val" class="font-mono text-cyan-300">0</span>
+                      </div>
+                      <div class="h-2 overflow-hidden rounded-full bg-slate-800">
+                        <div id="nlp-asl-bar" class="h-full rounded-full bg-gradient-to-r from-teal-400 to-cyan-300 transition-all duration-1000 ease-out" style="width:0%"></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="mb-2 flex items-center justify-between text-xs">
+                        <span class="text-slate-300">Filler Word Ratio</span>
+                        <span id="nlp-fwr-val" class="font-mono text-cyan-300">0.0</span>
+                      </div>
+                      <div class="h-2 overflow-hidden rounded-full bg-slate-800">
+                        <div id="nlp-fwr-bar" class="h-full rounded-full bg-gradient-to-r from-sky-400 to-teal-300 transition-all duration-1000 ease-out" style="width:0%"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Card 3: Generated Transcript & Summary -->
+                <div class="bg-slate-900/50 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 flex flex-col shadow-2xl">
+                  <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-sm font-semibold text-white">Generated Transcript</h3>
+                    <div class="px-2 py-1 rounded-md bg-cyan-500/20 text-[10px] font-mono text-cyan-300 font-medium border border-cyan-500/20">Groq AI</div>
+                  </div>
+                  <div class="overflow-y-auto flex-1 h-32 mb-4 text-sm text-slate-300 pr-4 leading-loose bg-slate-950/40 p-4 rounded-lg border border-slate-800 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-thumb]:rounded-full">
+                    <p id="nlp-transcript-val" class="italic">Transcript will appear here...</p>
+                  </div>
+                  
+                </div>
+
+                <!-- Card 4: AI Clinical Summary -->
+                <div class="mt-2 md:col-span-3 bg-slate-900/50 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 shadow-2xl">
+                  <div class="flex items-center gap-2 mb-4">
+                    <i data-lucide="bot" class="w-5 h-5 text-cyan-400"></i>
+                    <h3 class="text-sm font-semibold text-white uppercase tracking-widest">Clinical AI Interpretation</h3>
+                    <span class="ml-auto px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Groq LLaMA</span>
+                  </div>
+                  <div id="nlp-summary-skeleton" class="hidden animate-pulse space-y-3 mb-2">
+                    <div class="h-3 bg-slate-700/50 rounded w-3/4"></div>
+                    <div class="h-3 bg-slate-700/50 rounded w-full"></div>
+                    <div class="h-3 bg-slate-700/50 rounded w-5/6"></div>
+                  </div>
+                  <p id="nlp-ai-summary" class="text-sm text-slate-300 leading-relaxed">
+                    AI analysis will appear here...
+                  </p>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <!-- VISUAL PANEL -->
+        <div id="view-visual" class="hidden w-full max-w-4xl mx-auto pt-2 pb-12">
+          <div class="text-center mb-12">
+            <div class="inline-flex items-center justify-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 mb-4">
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+              <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-400">Live assessment</span>
+            </div>
+            <h1 class="text-4xl lg:text-5xl font-bold tracking-tight text-white mb-4">Visual Capture</h1>
+            <p class="text-slate-400 max-w-xl mx-auto">Record a 10-second webcam video to measure facial expressivity.</p>
+          </div>
+
+          <section class="framer-card w-full max-w-4xl bg-[#0B1121]/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 shadow-2xl mx-auto" id="visual-framer-card">
+            <!-- Card header -->
+            <div class="framer-card-header flex justify-between items-center w-full mb-8">
+              <div>
+                <p class="framer-step-label">Step 01 / Capture</p>
+              </div>
+              <div class="framer-step-right">
+                Facial Expressivity
+              </div>
+            </div>
+            <!-- Capture Instructions -->
+            <div class="bg-cyan-900/10 border border-cyan-500/20 rounded-xl p-5 mb-6 max-w-lg mx-auto text-left">
+              <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+                <i data-lucide="info" class="w-4 h-4"></i> Capture Instructions
+              </h4>
+              <ul class="mt-3 space-y-2 text-sm text-slate-300 list-disc list-inside marker:text-cyan-500/50">
+                <li>Ensure your face is fully visible and well-lit.</li>
+                <li>Maintain a neutral expression and look directly into the camera.</li>
+                <li>The capture will automatically complete after 10 seconds.</li>
+              </ul>
+            </div>
+            
+            <!-- Camera / Video Feed -->
+            <div class="relative w-full max-w-lg mx-auto h-[280px] bg-[#0B1121]/80 rounded-xl border border-slate-700/50 shadow-inner overflow-hidden mb-8">
+              <video id="webcam-preview" autoplay muted class="w-full h-full object-cover"></video>
+              <!-- Timer Overlay -->
+              <div id="face-state-timer-overlay" class="hidden absolute top-4 right-4 flex items-center gap-3 bg-black/40 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/10">
+                <div class="flex items-center gap-2">
+                  <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]"></div>
+                  <span class="text-xs font-bold text-red-500 uppercase tracking-widest">REC</span>
+                </div>
+                <span id="vision-record-timer" class="font-mono text-xl font-bold text-white tracking-wider tabular-nums">0:00</span>
+              </div>
+            </div>
+
+            <div id="face-state-active" class="hidden flex flex-col items-center justify-center mt-8 w-full mx-auto">
+              <button id="btn-vision-stop" class="relative flex items-center justify-center w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-full shadow-[0_0_30px_rgba(239,68,68,0.6)] hover:scale-105 transition-all">
+                <div class="absolute w-full h-full rounded-full border-2 border-red-400/50 animate-ping opacity-50"></div>
+                <div class="w-5 h-5 bg-white rounded-sm relative z-10"></div>
+              </button>
+              <p class="mt-6 text-[10px] font-bold text-red-400 uppercase tracking-[0.2em]">Tap to stop recording</p>
+            </div>
+
+            <!-- Idle Controls -->
+            <div id="face-state-idle" class="flex flex-col items-center justify-center">
+              <div class="relative flex items-center justify-center mb-4">
+                <div id="vision-record-ring-1" class="hidden absolute w-24 h-24 rounded-full bg-cyan-500/20 animate-ping"></div>
+                <div id="vision-record-ring-2" class="hidden absolute w-16 h-16 rounded-full bg-cyan-500/40 animate-pulse"></div>
+                <button id="btn-vision-record" class="relative z-10 w-16 h-16 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(34,211,238,0.5)] hover:scale-105 hover:shadow-[0_0_35px_rgba(34,211,238,0.7)] transition-all group">
+                  <svg id="vision-icon-cam" class="w-7 h-7 text-white group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                </button>
+              </div>
+              <p id="vision-record-status" class="text-sm font-medium text-cyan-400 uppercase tracking-widest">Tap to begin capture</p>
+            </div>
+
+            <!-- Playback & Analyze Controls -->
+            <div id="vision-upload-result" class="hidden w-full max-w-md mx-auto mt-8">
+              <video id="face-video-playback" controls class="hidden w-full h-48 mb-6 rounded-lg bg-[#0B1121]/80 border border-slate-700/50 shadow-inner outline-none"></video>
+              <button id="btn-vision-analyze" class="w-full relative overflow-hidden bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-bold py-4 px-6 rounded-xl shadow-[0_0_20px_rgba(34,211,238,0.4)] hover:shadow-[0_0_30px_rgba(34,211,238,0.6)] transition-all duration-300 group flex items-center justify-center gap-3">
+                <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
+                <i data-lucide="scan-face" class="w-5 h-5 relative z-10"></i>
+                <span id="btn-vision-analyze-text" class="relative z-10 tracking-wide">Generate Visual Biomarkers</span>
+                <svg id="btn-vision-analyze-spinner" class="hidden w-5 h-5 animate-spin relative z-10" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+              </button>
+              <button id="btn-vision-rerecord" type="button" class="mt-4 w-full flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-semibold text-slate-400 transition-all border border-slate-700 bg-slate-800/50 hover:bg-slate-700 hover:text-white">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                <span>Re-record Video</span>
+              </button>
+              <p id="vision-error-message" class="hidden mt-3 text-xs font-medium text-red-400 text-center bg-red-500/10 py-2 rounded-lg border border-red-500/20"></p>
+            </div>
+          </section>
+
+          <!-- Face Results Section -->
+          <section id="vision-results-section" class="hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Card 1: Facial Metrics -->
+              <div class="bg-slate-900/50 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 shadow-2xl">
+                <div class="flex items-center justify-between mb-8">
+                  <h3 class="text-sm font-semibold text-white">Visual Features</h3>
+                </div>
+                <div class="space-y-7"> 
+                  <div>
+                    <div class="mb-2 flex items-center justify-between text-xs">
+                      <span class="text-slate-300">Expressivity Variance</span>
+                      <span id="vision-var-val" class="font-mono text-cyan-300">0.0</span>
+                    </div>
+                    <div class="h-2 overflow-hidden rounded-full bg-slate-800">
+                      <div id="vision-var-bar" class="h-full rounded-full bg-gradient-to-r from-cyan-400 to-cyan-300 transition-all duration-1000 ease-out" style="width:0%"></div>
+                    </div>
+                  </div> 
+                  <div>
+                    <div class="mb-2 flex items-center justify-between text-xs">
+                      <span class="text-slate-300">Blink Rate</span>
+                      <span id="vision-blink-val" class="font-mono text-cyan-300">0 bpm</span>
+                    </div>
+                    <div class="h-2 overflow-hidden rounded-full bg-slate-800">
+                      <div id="vision-blink-bar" class="h-full rounded-full bg-gradient-to-r from-teal-400 to-cyan-300 transition-all duration-1000 ease-out" style="width:0%"></div>
+                    </div>
+                  </div> 
+                  <div>
+                    <div class="mb-2 flex items-center justify-between text-xs">
+                      <span class="text-slate-300">Smile Symmetry</span>
+                      <span id="vision-symmetry-val" class="font-mono text-cyan-300">0.0</span>
+                    </div>
+                    <div class="h-2 overflow-hidden rounded-full bg-slate-800">
+                      <div id="vision-symmetry-bar" class="h-full rounded-full bg-gradient-to-r from-sky-400 to-teal-300 transition-all duration-1000 ease-out" style="width:0%"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 2: Hypomimia Flag -->
+              <div class="bg-slate-900/50 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 flex flex-col shadow-2xl items-center justify-center relative overflow-hidden">
+                <div class="absolute -right-20 -top-24 size-64 rounded-full bg-cyan-400/[.06] blur-3xl"></div>
+                <div class="relative z-10 flex flex-col items-center justify-center text-center">
+                  <div class="flex items-center gap-2 mb-4 text-cyan-400">
+                    <i data-lucide="eye-off" class="w-6 h-6"></i>
+                    <h3 class="text-sm font-semibold uppercase tracking-widest">Hypomimia Flag</h3>
+                  </div>
+                  <span id="vision-hypomimia-badge" class="text-5xl font-bold text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">-</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 3: AI Clinical Summary -->
+            <div class="mt-6 md:col-span-2 bg-slate-900/50 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 shadow-2xl">
+              <div class="flex items-center gap-2 mb-4">
+                <i data-lucide="bot" class="w-5 h-5 text-cyan-400"></i>
+                <h3 class="text-sm font-semibold text-white uppercase tracking-widest">Clinical AI Interpretation</h3>
+                <span class="ml-auto px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Groq LLaMA</span>
+              </div>
+              <p id="face-ai-summary" class="text-sm text-slate-300 leading-relaxed">
+                AI analysis will appear here...
+              </p>
+            </div>
+            
+            <button id="btn-export-vision-pdf" class="mt-8 flex mx-auto items-center justify-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-400/[.08] px-8 py-3 text-xs font-medium text-cyan-200 hover:bg-cyan-400/[.14] hover:shadow-[0_0_15px_rgba(6,182,212,.25)]">
+              <i data-lucide="download" class="size-4"></i> Export Clinical PDF
+            </button>
+          </section>
+        </div>
+
+      </main>
+
+      <!-- PATIENT HISTORY VIEW -->
+      <main id="view-patient-history" class="hidden w-full max-w-7xl mx-auto pt-8">
+        <div class="flex items-center justify-between mb-8">
+          <div>
+            <h2 class="text-3xl font-bold text-white">Patient History</h2>
+            <p class="text-slate-400 mt-1">Recent screening sessions and outcomes</p>
+          </div>
+          <!-- Search Bar -->
+          <div class="relative w-72">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <input type="text" placeholder="Search by Session ID or Date..." class="w-full pl-10 pr-4 py-2 bg-slate-900/40 border border-white/[.1] rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all" />
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-white/[.07] bg-slate-900/40 backdrop-blur-xl p-6 lg:p-8 rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left">
+              <thead>
+                <tr class="bg-white/[.04] border-b border-white/[.06]">
+                  <th class="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Date</th>
+                  <th class="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Session Details</th>
+                  <th class="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-b border-white/[.06] hover:bg-slate-800/40 transition-colors">
+                  <td class="px-6 py-5 whitespace-nowrap">
+                    <span class="block text-gray-200 font-bold">2026-09-28</span>
+                    <span class="block text-slate-500 text-xs mt-1">10:34 AM</span>
+                  </td>
+                  <td class="px-6 py-5">
+                    <div class="flex flex-col gap-2">
+                      <span class="text-cyan-400 font-bold">Session VTX-A3K9</span>
+                      <div class="flex gap-2 items-center">
+                        <!-- Acoustic Badge -->
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-medium">
+                          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                          </svg>
+                          High Risk
+                        </span>
+                        <!-- Linguistic Badge -->
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-medium">
+                          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z"/>
+                          </svg>
+                          Low Risk
+                        </span>
+                        <!-- Vision Badge -->
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-medium">
+                          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          Normal
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-5 text-right">
+                    <div class="flex justify-end gap-3">
+                      <button class="p-2 rounded-lg bg-slate-800/50 border border-white/[.1] text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-400/50 transition-colors" title="Download Report">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                      </button>
+                      <button class="p-2 rounded-lg bg-slate-800/50 border border-white/[.1] text-red-400 hover:bg-red-500/10 hover:border-red-400/50 transition-colors" title="Delete Session">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+
+  </main>
+
+  <!-- ═══ SITE FOOTER ═══ -->
+  <footer class="w-full border-t py-4 px-6 lg:px-10" style="background:rgba(11,17,32,0.80);border-color:rgba(51,65,85,0.30);backdrop-filter:blur(12px)">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-600">
+      <div class="flex items-center gap-4">
+        <span class="flex items-center gap-1.5">
+          <svg class="w-3 h-3 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+          HIPAA-aligned architecture
+        </span>
+        <span class="flex items-center gap-1.5">
+          <svg class="w-3 h-3 text-cyan-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
+          Supabase Auth + RLS
+        </span>
+        <span class="flex items-center gap-1.5">
+          <svg class="w-3 h-3 text-slate-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+          Clinician-only access
+        </span>
+      </div>
+      <span>VoxTriad Neurocognitive Suite &copy; 2026</span>
+    </div>
+  </footer>
+
+  <!-- ===================================================================
+       PATIENT INTAKE GATE – CONTROLLER SCRIPT
+       Runs after app.js. Wires form submit, tab switching, and patches
+       every backend fetch call to include patient metadata.
+  ==================================================================== -->
+  <script>
+  (function () {
+    'use strict';
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+    function calculateAge(dobStr) {
+      if (!dobStr) return null;
+      const dob  = new Date(dobStr);
+      const today = new Date();
+      let age = today.getFullYear() - dob.getFullYear();
+      const m = today.getMonth() - dob.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+      return age;
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('intake-error');
+      if (!el) return;
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    function hideError() {
+      const el = document.getElementById('intake-error');
+      if (el) el.classList.add('hidden');
+    }
+
+    // ── Patient state (written once, read everywhere) ────────────────────
+    let patientData = null;
+
+    // Try restoring from sessionStorage if the user refreshed mid-session
+    try {
+      const stored = sessionStorage.getItem('vt_patient');
+      if (stored) patientData = JSON.parse(stored);
+    } catch (_) {}
+
+    // ── Gate dismiss ───────────────────────────────────────────────────────
+    function dismissGate() {
+      const gate = document.getElementById('intake-gate');
+      if (gate) gate.style.display = 'none';
+
+      // Show patient banner + triad tab bar
+      const banner = document.getElementById('patient-banner');
+      const tabBar = document.getElementById('triad-tab-bar');
+      if (banner) banner.classList.remove('hidden');
+      if (tabBar)  tabBar.classList.remove('hidden');
+
+      // Populate banner
+      if (patientData) {
+        const nameEl = document.getElementById('patient-name-display');
+        const ageEl  = document.getElementById('patient-age-display');
+        const sexEl  = document.getElementById('patient-gender-display');
+        if (nameEl) nameEl.textContent = patientData.fullName;
+        if (ageEl)  ageEl.textContent  = `Age ${patientData.age}`;
+        if (sexEl)  sexEl.textContent  = patientData.sex;
+      }
+
+      // Reveal app container (hides auth section, shows screener)
+      const appContainer = document.getElementById('app-container');
+      if (appContainer) appContainer.style.display = '';
+
+      // Ensure acoustic tab is active by default
+      activateTab('acoustic');
+    }
+
+    // If we already have patient data from a prior navigation, skip gate immediately
+    if (patientData) {
+      dismissGate();
+    } else {
+      // Fresh session: bypass the gate and force the banner into Edit Mode immediately
+      dismissGate();
+      const nameInput = document.getElementById('patient-name-input');
+      const ageInput = document.getElementById('patient-age-input');
+      const idInput = document.getElementById('patient-manual-id');
+      const genderInput = document.getElementById('patient-gender-input');
+      const viewMode = document.getElementById('patient-view-mode');
+      const editMode = document.getElementById('patient-edit-mode');
+
+      if (nameInput) nameInput.value = '';
+      if (ageInput) ageInput.value = '';
+      if (idInput) idInput.value = '';
+      if (genderInput) genderInput.selectedIndex = 0;
+
+      if (viewMode) viewMode.classList.add('hidden');
+      if (editMode) editMode.classList.remove('hidden');
+    }
+
+    // ── Form submit handler ────────────────────────────────────────────────
+    const form = document.getElementById('intake-form');
+    if (form) {
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        hideError();
+
+        const name = (document.getElementById('intake-name')?.value || '').trim();
+        const dob  = (document.getElementById('intake-dob')?.value || '').trim();
+        const sex  = (document.getElementById('intake-sex')?.value || '').trim();
+
+        if (!name)  { showError('Please enter the patient\'s full name.');       return; }
+        if (!dob)   { showError('Please enter the patient\'s date of birth.');    return; }
+        if (!sex)   { showError('Please select the patient\'s biological sex.');  return; }
+
+        const age = calculateAge(dob);
+        if (age === null || age < 0 || age > 130) {
+          showError('Date of birth appears invalid. Please check and try again.');
+          return;
+        }
+
+        patientData = { fullName: name, dob, sex, age };
+        try { sessionStorage.setItem('vt_patient', JSON.stringify(patientData)); } catch (_) {}
+
+        // Animate button
+        const btn = document.getElementById('intake-submit');
+        if (btn) { btn.textContent = 'Starting…'; btn.disabled = true; }
+
+        setTimeout(dismissGate, 200);
+      });
+    }
+
+    // ── Triad Tab Switching ────────────────────────────────────────────────
+    function activateTab(tab) {
+      // Update tab bar buttons
+      document.querySelectorAll('.triad-tab').forEach(btn => {
+        btn.classList.toggle('triad-tab-active', btn.dataset.tab === tab);
+      });
+
+      // Show/hide panels
+      const panels = {
+        acoustic:   document.getElementById('view-acoustic'),
+        linguistic: document.getElementById('view-linguistic'),
+        visual:     document.getElementById('view-visual'),
+      };
+      Object.entries(panels).forEach(([key, el]) => {
+        if (!el) return;
+        if (key === tab) {
+          el.classList.remove('hidden');
+          el.style.display = '';
+        } else {
+          el.classList.add('hidden');
+        }
+      });
+    }
+
+    document.querySelectorAll('.triad-tab').forEach(btn => {
+      btn.addEventListener('click', () => activateTab(btn.dataset.tab));
+    });
+
+    // Also wire hamburger sub-menu links (they already exist in screening.html)
+    const menuAcoustic   = document.getElementById('menu-nav-acoustic');
+    const menuLinguistic = document.getElementById('menu-nav-linguistic');
+    const menuVisual     = document.getElementById('menu-nav-visual');
+    if (menuAcoustic)   menuAcoustic.addEventListener('click',   () => activateTab('acoustic'));
+    if (menuLinguistic) menuLinguistic.addEventListener('click', () => activateTab('linguistic'));
+    if (menuVisual)     menuVisual.addEventListener('click',     () => activateTab('visual'));
+
+    // ── Patient data helpers for backend calls ─────────────────────────────
+    // These globals are read by the patched upload functions below.
+    window._vtPatientName = function() { return patientData?.fullName || 'Anonymous'; };
+    window._vtPatientAge  = function() { return patientData?.age      || null; };
+    window._vtPatientSex  = function() { return patientData?.sex      || null; };
+    window._vtPatientDob  = function() { return patientData?.dob      || null; };
+
+    // ── Patch Acoustic Upload (POST /api/audio/upload) ─────────────────────
+    // Wrap the existing btn-upload click so we can inject a task_type that
+    // includes the patient name in the URL query (backend logs it).
+    const btnUpload = document.getElementById('btn-upload');
+    if (btnUpload) {
+      // Clone and replace to remove any existing listeners added by app.js
+      // then re-add a coordinated handler.
+      const origOnClick = btnUpload.onclick;
+      btnUpload.addEventListener('click', function patchAcoustic(evt) {
+        // app.js already handles the actual fetch; we just ensure
+        // sessionStorage patient data is available for the report payload.
+        window._vtPatientForReport = patientData;
+      }, true); // capture phase so it runs before app.js handler
+    }
+
+    // ── Patch NLP Upload (POST /api/nlp/analyze) ──────────────────────────
+    const btnNlp = document.getElementById('btn-nlp-analyze');
+    if (btnNlp) {
+      btnNlp.addEventListener('click', function patchNlp() {
+        window._vtPatientForReport = patientData;
+      }, true);
+    }
+
+    // ── Patch Vision Upload (POST /api/vision/analyze) ────────────────────
+    const btnVision = document.getElementById('btn-vision-analyze');
+    if (btnVision) {
+      btnVision.addEventListener('click', function patchVision() {
+        window._vtPatientForReport = patientData;
+      }, true);
+    }
+
+    // ── Expose patientData for app.js to access if needed ─────────────────
+    window.vtGetPatient = function() { return patientData; };
+
+  })();
+  </script>
+</body>
+</html>
